@@ -98,6 +98,12 @@ static void    read_parameters(int argc, char **argv);
 static int32_t parse_parameters(const char *numericalin);
 static void    local_finalize(void);
 
+/** cvmrecord_t: cvm record.  Onlye used if USECVMDB not defined **/
+typedef struct cvmrecord_t {
+    char key[12];
+    float Vp, Vs, density;
+} cvmrecord_t;
+
 /*---------------- Mesh generation data structures -----------------------*/
 #ifdef USECVMDB
 
@@ -115,11 +121,6 @@ static int32_t zsearch(void *base, int32_t count, int32_t recordsize,
 static cvmrecord_t *sliceCVM(const char *cvm_flatfile);
 
 #endif
-/** cvmrecord_t: cvm record.  Onlye used if USECVMDB not defined **/
-typedef struct cvmrecord_t {
-    char key[12];
-    float Vp, Vs, density;
-} cvmrecord_t;
 
 /**
  * mrecord_t: Complete mesh database record
@@ -1126,7 +1127,7 @@ static void  open_cvmdb(void){
     Global.theZForMeshOrigin = double_message_extra[2];
 
 #else
-    strcpy(Param.theCVMFlatFile, cvmdb_input_file);
+    strcpy(Param.theCVMFlatFile, Param.cvmdb_input_file);
 #endif
 
 }
@@ -1669,14 +1670,15 @@ static cvmrecord_t *sliceCVM(const char *cvm_flatfile)
 }
 
 
+/*
 static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 {
     cvmrecord_t *cvmrecord;
     int32_t bufferedbytes, bytecount, recordcount;
 
     if (Global.myID == Global.theGroupSize - 1) {
-	/* the last processor reads data and
-	   distribute to other processors*/
+	 the last processor reads data and
+	   distribute to other processors
 
 	FILE *fp;
 	int fd, procid;
@@ -1704,13 +1706,13 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	}
 
 	intervaltable = octor_getintervaltable(Global.myOctree);
-	/*
+
 	for (procid = 0; procid <= Global.myID; procid++) {
 	    fprintf(stderr, "interval[%d] = {%d, %d, %d}\n", procid,
 		    intervaltable[procid].x << 1, intervaltable[procid].y << 1,
 		    intervaltable[procid].z << 1);
 	}
-	*/
+
 
 	bytesent = 0;
 	maxbuf = malloc(maxbufsize) ;
@@ -1720,7 +1722,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	    exit(1);
 	}
 
-	/* Try to read max number of CVM records as allowed */
+	 Try to read max number of CVM records as allowed
 	recordcount = fread(maxbuf, sizeof(cvmrecord_t),
 			    maxbufsize / sizeof(cvmrecord_t), fp);
 
@@ -1730,17 +1732,17 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	    exit(1);
 	}
 
-	/* start with proc 0 */
+	 start with proc 0
 	procid = 0;
 
-	while (procid < Global.myID) { /* repeatedly fill the buffer */
+	while (procid < Global.myID) {  repeatedly fill the buffer
 	    point_t searchpoint, *point;
 	    int newreads;
 
-	    /* we have recordcount to work with */
+	     we have recordcount to work with
 	    cvmrecord = (cvmrecord_t *)maxbuf;
 
-	    while (procid < Global.myID) { /* repeatedly send out data */
+	    while (procid < Global.myID) {  repeatedly send out data
 		searchpoint.x = intervaltable[procid + 1].x << 1;
 		searchpoint.y = intervaltable[procid + 1].y << 1;
 		searchpoint.z = intervaltable[procid + 1].z << 1;
@@ -1758,23 +1760,23 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 		    bytecount = offset * sizeof(cvmrecord_t);
 		    MPI_Send(cvmrecord, bytecount, MPI_CHAR, procid,
 			     CVMRECORD_MSG, comm_solver);
-		    /*
+
 		    fprintf(stderr,
 			    "Procid = %d offset = %qd bytecount = %d\n",
 			    procid, (int64_t)bytesent, bytecount);
-		    */
+
 
 		    bytesent += bytecount;
 
-		    /* prepare for the next processor */
+		     prepare for the next processor
 		    recordcount -= offset;
 		    cvmrecord = (cvmrecord_t *)point;
 		    procid++;
 		}
 	    }
 
-	    /* Move residual data to the beginning of the buffer
-	       and try to fill the newly free space */
+	     Move residual data to the beginning of the buffer
+	       and try to fill the newly free space
 	    bufferedbytes = sizeof(cvmrecord_t) * recordcount;
 	    memmove(maxbuf, cvmrecord, bufferedbytes);
 	    newreads = fread((char *)maxbuf + bufferedbytes,
@@ -1787,7 +1789,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 
 	free(maxbuf);
 
-	/* I am supposed to accomodate the remaining octants */
+	 I am supposed to accomodate the remaining octants
 	bytecount = statbuf.st_size - bytesent;
 
 	cvmrecord = (cvmrecord_t *)malloc(bytecount);
@@ -1798,7 +1800,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	    exit(1);
 	}
 
-	/* fseek exiting the for loop has file cursor propertly */
+	 fseek exiting the for loop has file cursor propertly
 	if (fseeko(fp, bytesent, SEEK_SET) != 0) {
 	    fprintf(stderr, "Thread %d: fseeko failed\n", Global.myID);
 	    MPI_Abort(MPI_COMM_WORLD, ERROR);
@@ -1812,15 +1814,15 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	    exit(1);
 	}
 
-	/*
+
 	  fprintf(stderr, "Procid = %d offset = %qd bytecount = %d\n",
 	  Global.myID, (int64_t)bytesent, bytecount);
-	*/
+
 
 	fclose(fp);
 
     } else {
-	/* wait for my turn till PE(n - 1) tells me to go ahead */
+	 wait for my turn till PE(n - 1) tells me to go ahead
 
 	MPI_Status status;
 
@@ -1839,7 +1841,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 
     }
 
-    /* Every processor should set these parameters correctly */
+     Every processor should set these parameters correctly
     Global.theCVMRecordCount = bytecount / sizeof(cvmrecord_t);
     if (Global.theCVMRecordCount * sizeof(cvmrecord_t) != (size_t)bytecount) {
 	fprintf(stderr, "Thread %d: received corrupted CVM data\n",
@@ -1850,6 +1852,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 
     return cvmrecord;
 }
+*/
 
 
 
