@@ -5823,56 +5823,56 @@ static void compute_setab(double freq, double *aBasePtr, double *bBasePtr)
 
     if (Param.theTypeOfDamping == RAYLEIGH)
     {
-	/* the factors 0.2 and 1 were calibrated heuristically by LEO */
-	w1 = 2 * PI * freq *.2;
-	w2 = 2 * PI * freq * 1;
+        /* the factors 0.2 and 1 were calibrated heuristically by LEO */
+        w1 = 2 * PI * freq *.2;
+        w2 = 2 * PI * freq * 1;
 
-	/* logs */
-	lw1 = log(w1);
-	lw2 = log(w2);
+        /* logs */
+        lw1 = log(w1);
+        lw2 = log(w2);
 
-	/* squares */
-	sw1 = w1 * w1;
-	sw2 = w2 * w2;
+        /* squares */
+        sw1 = w1 * w1;
+        sw2 = w2 * w2;
 
-	/* cubes */
-	cw1 = w1 * w1 * w1;
-	cw2 = w2 * w2 * w2;
+        /* cubes */
+        cw1 = w1 * w1 * w1;
+        cw2 = w2 * w2 * w2;
 
-	/* numerator */
-	numer = w1 * w2 *
-	    ( -2 * sw1 * lw2 + 2 * sw1 * lw1 - 2 * w1 * w2 * lw2
-	      + 2 * w1 * w2 * lw1 + 3 * sw2 - 3 * sw1
-		  - 2 * sw2 * lw2 + 2 * sw2 * lw1);
+        /* numerator */
+        numer = w1 * w2 *
+                ( -2 * sw1 * lw2 + 2 * sw1 * lw1 - 2 * w1 * w2 * lw2
+                        + 2 * w1 * w2 * lw1 + 3 * sw2 - 3 * sw1
+                        - 2 * sw2 * lw2 + 2 * sw2 * lw1);
 
-	/* denominator */
-	denom = (cw1 - cw2 + 3 * sw2 * w1 - 3 * sw1 * w2);
+        /* denominator */
+        denom = (cw1 - cw2 + 3 * sw2 * w1 - 3 * sw1 * w2);
 
-	/* the a over zeta target is... */
-	*aBasePtr = numer / denom;
+        /* the a over zeta target is... */
+        *aBasePtr = numer / denom;
 
-	/* new numerator */
-	numer = 3 * (2 * w1 * w2 * lw2 - 2 * w1 * w2 * lw1 + sw1 - sw2);
+        /* new numerator */
+        numer = 3 * (2 * w1 * w2 * lw2 - 2 * w1 * w2 * lw1 + sw1 - sw2);
 
-	/* the b over zeta target is... */
-	*bBasePtr = numer / denom;
+        /* the b over zeta target is... */
+        *bBasePtr = numer / denom;
 
     }
     else if ( Param.theTypeOfDamping == MASS )
     {
-	w1 = 2 * PI * freq * .1;  /* these .1 and 8 heuristics */
-	w2 = 2 * PI * freq * 8;
+        w1 = 2 * PI * freq * .1;  /* these .1 and 8 heuristics */
+        w2 = 2 * PI * freq * 8;
 
-	numer = 2 * w2 * w1 * log(w2 / w1);
-	denom = w2 - w1;
+        numer = 2 * w2 * w1 * log(w2 / w1);
+        denom = w2 - w1;
 
-	*aBasePtr = 1.3*numer / denom;  /* this 1.3 comes out from heuristics */
-	*bBasePtr = 0;
+        *aBasePtr = 1.3*numer / denom;  /* this 1.3 comes out from heuristics */
+        *bBasePtr = 0;
     }
     else if ( Param.theTypeOfDamping == NONE || Param.theTypeOfDamping == BKT )
     {
-	*aBasePtr = 0;
-	*bBasePtr = 0;
+        *aBasePtr = 0;
+        *bBasePtr = 0;
     }
 
     return;
