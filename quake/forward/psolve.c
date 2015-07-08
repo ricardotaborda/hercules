@@ -262,7 +262,14 @@ static struct Param_t {
     double  theDomainZ;
     noyesflag_t  drmImplement;
     drm_part_t   theDrmPart;
-
+    noyesflag_t  useProfile;
+    int32_t      theNumberOfLayers;
+    double*  theProfileZ;
+    double*  theProfileVp;
+    double*  theProfileVs;
+    double*  theProfileRho;
+    double*  theProfileQp;
+    double*  theProfileQs;
 } Param = {
     .FourDOutFp = NULL,
     .theMonitorFileFp = NULL,
@@ -281,7 +288,9 @@ static struct Param_t {
     .theUseCheckPoint =0,
     .theTimingBarriersFlag = 0,
     .the4DOutSize   = 0,
-    .theMeshOutFlag = DO_OUTPUT
+    .theMeshOutFlag = DO_OUTPUT,
+    .useProfile = NO,
+    .theNumberOfLayers = 0
 };
 
 /* These are all of the remaining global variables - this list should not grow */
@@ -368,7 +377,7 @@ monitor_print( const char* format, ... )
 static void read_parameters( int argc, char** argv ){
 
 #define LOCAL_INIT_DOUBLE_MESSAGE_LENGTH 18  /* Must adjust this if adding double params */
-#define LOCAL_INIT_INT_MESSAGE_LENGTH 20     /* Must adjust this if adding int params */
+#define LOCAL_INIT_INT_MESSAGE_LENGTH 21     /* Must adjust this if adding int params */
 
     double  double_message[LOCAL_INIT_DOUBLE_MESSAGE_LENGTH];
     int     int_message[LOCAL_INIT_INT_MESSAGE_LENGTH];
@@ -447,7 +456,7 @@ static void read_parameters( int argc, char** argv ){
     int_message[17] = (int)Param.drmImplement;
     int_message[18] = (int)Param.useInfQk;
     int_message[19] = Param.theStepMeshingFactor;
-
+    int_message[20] = (int)Param.useProfile;
 
     MPI_Bcast(int_message, LOCAL_INIT_INT_MESSAGE_LENGTH, MPI_INT, 0, comm_solver);
 
@@ -471,6 +480,7 @@ static void read_parameters( int argc, char** argv ){
     Param.drmImplement                   = int_message[17];
     Param.useInfQk                       = int_message[18];
     Param.theStepMeshingFactor           = int_message[19];
+    Param.useProfile                     = int_message[20];
 
     /*Broadcast all string params*/
     MPI_Bcast (Param.parameters_input_file,  256, MPI_CHAR, 0, comm_solver);
@@ -985,6 +995,11 @@ static int32_t parse_parameters( const char* numericalin )
                 use_infinite_qk);
     }
 
+    /* Check whether a profile will be used and init global flag to YES */
+    if ( strcasecmp(Param.cvmdb_input_file, "profile") == 0 ) {
+        Param.useProfile = YES;
+    }
+
     /* Init the static global variables */
 
     Param.theRegionLat      = region_origin_latitude_deg;
@@ -1059,8 +1074,92 @@ static int32_t parse_parameters( const char* numericalin )
 }
 
 
-
 /*-----------Mesh generation related routines------------------------------*/
+
+/* In case a profile is used... */
+
+typedef enum {
+  PROFILE_VP = 0, PROFILE_VS, PROFILE_RHO, PROFILE_QP, PROFILE_QS
+} profile_flag_t;
+
+/**
+ * Interpolates the values of the profile property given the corresponding flag
+ * and the indices in the tables.
+ *
+ * @return float of property
+ */
+float interpolate_profile_property(double depth, int lowerIndex, int upperIndex, int flag) {
+
+    static const char* fname = __FUNCTION_NAME;
+    double* theProfileProperty = NULL;
+    double  theProperty;
+
+    switch (flag) {
+        case PROFILE_VP:
+            theProfileProperty = Param.theProfileVp;
+            break;
+        case PROFILE_VS:
+            theProfileProperty = Param.theProfileVs;
+            break;
+        case PROFILE_RHO:
+            theProfileProperty = Param.theProfileRho;
+            break;
+        case PROFILE_QP:
+            theProfileProperty = Param.theProfileQp;
+            break;
+        case PROFILE_QS:
+            theProfileProperty = Param.theProfileQs;
+            break;
+        default:
+            solver_abort(fname, NULL, "Error on interpolation of profile properties\n");
+    }
+
+    theProperty = theProfileProperty[lowerIndex]
+                + ( depth - Param.theProfileZ[lowerIndex] )
+                * ( theProfileProperty[upperIndex] - theProfileProperty[lowerIndex] )
+                / ( Param.theProfileZ[upperIndex] - Param.theProfileZ[lowerIndex] );
+
+    return (float)theProperty;
+}
+
+/**
+ * Finds the indices between which the depth queried is located and calls
+ * interpolate_profile to return the properties
+ *
+ * @return 0 on success
+ * @return 1 on failure
+ */
+int profile_query(double depth, cvmpayload_t* props) {
+
+    int i, last;
+    
+    last = Param.theNumberOfLayers - 1;
+    
+    if ( depth < 0 ) return 1;
+    
+    if ( depth >= Param.theProfileZ[last] ) {
+        props->Vp  = Param.theProfileVp[last];
+        props->Vs  = Param.theProfileVp[last];
+        props->rho = Param.theProfileVp[last];
+        return 0;
+    }
+    
+    for (i = 0; i < last; i++) {
+        
+        if ( (depth >= Param.theProfileZ[i]) && (depth < Param.theProfileZ[i+1]) ) {
+
+            props->Vp  = interpolate_profile_property(depth, i, i+1, PROFILE_VP );
+            props->Vs  = interpolate_profile_property(depth, i, i+1, PROFILE_VS );
+            props->rho = interpolate_profile_property(depth, i, i+1, PROFILE_RHO);
+            
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/* In case an etree is used...*/
 
 static void  open_cvmdb(void){
 
@@ -1327,7 +1426,7 @@ setrec( octant_t* leaf, double ticksize, void* data )
     edata->edgesize = ticksize * halfticks * 2;
 
     /* Check for buildings and proceed according to the buildings setrec */
-    if ( Param.includeBuildings == YES ) {
+    if ( (Param.includeBuildings == YES) && (Param.useProfile == NO) ) {
 		if ( bldgs_setrec( leaf, ticksize, edata, Global.theCVMEp,Global.theXForMeshOrigin,Global.theYForMeshOrigin,Global.theZForMeshOrigin ) ) {
             return;
         }
@@ -1339,43 +1438,47 @@ setrec( octant_t* leaf, double ticksize, void* data )
 
     for ( i_x = 0; i_x < n_points; i_x++ ) {
 
-	x_m = (Global.theXForMeshOrigin
-	       + (leaf->lx + points[i_x] * halfticks) * ticksize);
+        x_m = (Global.theXForMeshOrigin
+                + (leaf->lx + points[i_x] * halfticks) * ticksize);
 
-	for ( i_y = 0; i_y < n_points; i_y++ ) {
+        for ( i_y = 0; i_y < n_points; i_y++ ) {
 
-	    y_m  = Global.theYForMeshOrigin
-		+ (leaf->ly + points[i_y] * halfticks) * ticksize;
+            y_m  = Global.theYForMeshOrigin
+                    + (leaf->ly + points[i_y] * halfticks) * ticksize;
 
-	    for ( i_z = 0; i_z < n_points; i_z++) {
+            for ( i_z = 0; i_z < n_points; i_z++) {
 
-		z_m = Global.theZForMeshOrigin
-		    + (leaf->lz +  points[i_z] * halfticks) * ticksize;
+                z_m = Global.theZForMeshOrigin
+                        + (leaf->lz +  points[i_z] * halfticks) * ticksize;
 
-		/* Shift the domain if buildings are considered */
-		if ( Param.includeBuildings == YES ) {
+                /* Shift the domain if buildings are considered */
+                if ( Param.includeBuildings == YES ) {
                     z_m -= get_surface_shift();
-		}
+                }
 
-		res = cvm_query( Global.theCVMEp, y_m, x_m, z_m, &g_props );
+                if (Param.useProfile == NO) {
+                    res = cvm_query( Global.theCVMEp, y_m, x_m, z_m, &g_props );
+                } else {
+                    res = profile_query(z_m, &g_props);
+                }
 
-		if (res != 0) {
-		    continue;
-		}
+                if (res != 0) {
+                    continue;
+                }
 
-		if ( g_props.Vs < g_props_min.Vs ) {
-		    /* assign minimum value of vs to produce elements
-		     * that are small enough to rightly represent the model */
-		    g_props_min = g_props;
-		}
+                if ( g_props.Vs < g_props_min.Vs ) {
+                    /* assign minimum value of vs to produce elements
+                     * that are small enough to rightly represent the model */
+                    g_props_min = g_props;
+                }
 
-		if (g_props.Vs <= Param.theVsCut) {
-		    /* stop early if needed, completely break out of all
-		     * the loops, the label is just outside the loop */
-		    goto outer_loop_label;
-		}
-	    }
-	}
+                if (g_props.Vs <= Param.theVsCut) {
+                    /* stop early if needed, completely break out of all
+                     * the loops, the label is just outside the loop */
+                    goto outer_loop_label;
+                }
+            }
+        }
     }
  outer_loop_label: /* in order to completely break out from the inner loop */
 
@@ -6801,15 +6904,120 @@ interpolate_station_displacements( int32_t step )
 /**
  * Init stations info and data structures
  */
-void output_stations_init( const char* numericalin )
-{
+void output_stations_init( const char* numericalin ) {
+
     if (Global.myID == 0) {
-	read_stations_info( numericalin );
+        read_stations_info( numericalin );
     }
 
     broadcast_stations_info();
     setup_stations_data();
 
+    MPI_Barrier( comm_solver );
+
+    return;
+}
+
+/**
+ * Reads the profile layers from parameters.in - only done by PE0
+ */
+static void read_profile (  const char* parametersin ) {
+
+    static const char* fname = __FUNCTION_NAME;
+
+    int    iLayer;
+    double *auxtable;
+    FILE*  fp;
+
+    if ( (fp = fopen(parametersin, "r")) == NULL ) {
+        solver_abort(fname, parametersin, "Error opening parameters.in file\n");
+    }
+
+    if ( parsetext(fp, "number_profile_layers", 'i', &Param.theNumberOfLayers) != 0 ) {
+        solver_abort(fname, NULL, "Error reading the number of layers from %s\n", parametersin);
+    }
+
+    auxtable            = (double*)malloc(sizeof(float) * Param.theNumberOfLayers * 6);
+    Param.theProfileVp  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+    Param.theProfileVs  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+    Param.theProfileRho = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+    Param.theProfileQp  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+    Param.theProfileQs  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+
+    if ( auxtable            == NULL ||
+         Param.theProfileZ   == NULL ||
+         Param.theProfileVp  == NULL ||
+         Param.theProfileVs  == NULL ||
+         Param.theProfileRho == NULL ||
+         Param.theProfileQp  == NULL ||
+         Param.theProfileQs  == NULL ) {
+        solver_abort(fname, NULL, "Error allocating memory for the profile\n");
+    }
+
+    if ( parsedarray(fp, "profile_layers", Param.theNumberOfLayers * 6, auxtable) != 0 ) {
+        solver_abort(fname, NULL, "Error parsing the profile layers from %s\n", parametersin);
+    }
+
+    for (iLayer = 0; iLayer < Param.theNumberOfLayers; iLayer++) {
+        Param.theProfileZ  [iLayer] = auxtable[ iLayer * 5     ];
+        Param.theProfileVp [iLayer] = auxtable[ iLayer * 5 + 1 ];
+        Param.theProfileVs [iLayer] = auxtable[ iLayer * 5 + 2 ];
+        Param.theProfileRho[iLayer] = auxtable[ iLayer * 5 + 3 ];
+        Param.theProfileQp [iLayer] = auxtable[ iLayer * 5 + 4 ];
+        Param.theProfileQs [iLayer] = auxtable[ iLayer * 5 + 5 ];
+    }
+
+    return;
+}
+
+
+/**
+ * Broadcasts the profile to all other PEs
+ */
+void broadcast_profile() {
+
+    static const char* fname = __FUNCTION_NAME;
+
+    if ( Global.myID != 0 ) {
+        Param.theProfileZ   = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+        Param.theProfileVp  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+        Param.theProfileVs  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+        Param.theProfileRho = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+        Param.theProfileQp  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+        Param.theProfileQs  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+    }
+
+    if ( Param.theProfileZ   == NULL ||
+         Param.theProfileVp  == NULL ||
+         Param.theProfileVs  == NULL ||
+         Param.theProfileRho == NULL ||
+         Param.theProfileQp  == NULL ||
+         Param.theProfileQs  == NULL ) {
+        solver_abort(fname, NULL, "Error allocating memory for the profile\n");
+    }
+
+    MPI_Barrier(comm_solver);
+
+    MPI_Bcast(Param.theProfileZ,   Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileVp,  Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileVs,  Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileRho, Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileQp,  Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileQs,  Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+
+    return;
+}
+
+/**
+ * Load the velocity profile is given by the user
+ */
+void load_profile( const char* parametersin ) {
+
+    if ( Global.myID == 0 ) {
+        read_profile( parametersin );
+    }
+
+    broadcast_profile();
     MPI_Barrier( comm_solver );
 
     return;
@@ -7179,8 +7387,11 @@ mesh_correct_properties( etree_t* cvm )
         				//                        }
         			}
 
-        			res = cvm_query( Global.theCVMEp, east_m, north_m,
-        					depth_m, &g_props );
+                    if (Param.useProfile == NO) {
+                        res = cvm_query( Global.theCVMEp, east_m, north_m, depth_m, &g_props );
+                    } else {
+                        res = profile_query(depth_m, &g_props);
+                    }
 
         			if (res != 0) {
         				fprintf(stderr, "Cannot find the query point\n");
@@ -7400,8 +7611,18 @@ int main( int argc, char** argv )
     /* Read input parameters from file */
     read_parameters(argc, argv);
 
-    /* Create and open database */
-    open_cvmdb();
+    if ( Param.useProfile == YES ) {
+
+        /* Read profile to memory */
+        load_profile( Param.parameters_input_file );
+
+    } else {
+
+        /* Create and open database */
+        open_cvmdb();
+    }
+
+
 
     /* Initialize nonlinear parameters */
     if ( Param.includeNonlinearAnalysis == YES ) {
