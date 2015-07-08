@@ -7550,6 +7550,86 @@ mesh_correct_properties( etree_t* cvm )
 }
 
 
+/**
+ * Temporary function to print profile for correctness
+ */
+void print_profile() {
+
+    int i, limit = 12000;
+    double z, deltaZ = 0.5;
+    double x = Param.theDomainX / 2.0;
+    double y = Param.theDomainY / 2.0;
+    vector3D_t point;
+
+    FILE* fp;
+    static char proFile[256];
+
+    octant_t* octant;
+    elem_t*  elemp;
+    edata_t* edata;
+
+    int32_t eindex;
+
+    sprintf(proFile, "outputfiles/profiles/profile.%d", Global.myID);
+    fp = hu_fopen(proFile, "w");
+
+    point.x[0] = x;
+    point.x[1] = y;
+
+    if ( Global.myID == 0 ) {
+        fprintf(stdout, "Printing profile... ");
+        fflush(stdout);
+    }
+
+    for (i = 0; i <= limit; i++) {
+
+        z = deltaZ * (double)i;
+        point.x[2] = z;
+
+        /* search octant */
+        if ( search_point(point, &octant ) != 1) {
+            continue;
+        }
+
+        /* search element */
+        for (eindex = 0; eindex < Global.myMesh->lenum; eindex++) {
+
+            int32_t lnid0 = Global.myMesh->elemTable[eindex].lnid[0];
+
+            if ( (Global.myMesh->nodeTable[lnid0].x == octant->lx) &&
+                 (Global.myMesh->nodeTable[lnid0].y == octant->ly) &&
+                 (Global.myMesh->nodeTable[lnid0].z == octant->lz) ) {
+
+                /* Sanity check */
+                if ( Global.myMesh->elemTable[eindex].level != octant->level ) {
+                    fprintf(stderr, "Thread %d: source_init: internal error\n", Global.myID);
+                    MPI_Abort(MPI_COMM_WORLD, ERROR);
+                    exit(1);
+                }
+
+                break;
+            }
+        }
+
+        elemp = &(Global.myMesh->elemTable[eindex]);
+        edata = (edata_t*)elemp->data;
+
+        fprintf(fp, "%12.2lf %16.4f %16.4f %16.4f\n", z, edata->Vp, edata->Vs, edata->rho);
+
+    }
+
+    MPI_Barrier(comm_solver);
+
+    if ( Global.myID == 0 ) {
+        fprintf(stdout, "done!\n");
+        fflush(stdout);
+    }
+
+    return;
+}
+
+
+
 /*** Program's standard entry point. ***/
 int main( int argc, char** argv )
 {
@@ -7649,6 +7729,9 @@ int main( int argc, char** argv )
 
     /* Generate, partition and output unstructured octree mesh */
     mesh_generate();
+
+    // TEMP FUNCTION TO PRINT PROFILE
+    print_profile();
 
     if ( Param.includeBuildings == YES ){
         if ( get_fixedbase_flag() == YES ) {
