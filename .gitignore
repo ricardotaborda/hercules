@@ -1,6 +1,8 @@
 user.mk
 rundir
 
+.DS_Store
+
 quake/cvm/dumpcvm
 quake/cvm/pickrecord
 quake/cvm/querycvm
