@@ -6981,6 +6981,8 @@ void broadcast_profile() {
 
     static const char* fname = __FUNCTION_NAME;
 
+    MPI_Bcast(&Param.theNumberOfLayers, 1, MPI_INT, 0, comm_solver);
+
     if ( Global.myID != 0 ) {
         Param.theProfileZ   = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
         Param.theProfileVp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
@@ -7624,8 +7626,6 @@ int main( int argc, char** argv )
         /* Create and open database */
         open_cvmdb();
     }
-
-
 
     /* Initialize nonlinear parameters */
     if ( Param.includeNonlinearAnalysis == YES ) {
