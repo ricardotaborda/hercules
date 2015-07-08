@@ -2274,8 +2274,10 @@ mesh_generate()
     }
 
 #ifdef USECVMDB
-    /* Close the material database */
-    etree_close(Global.theCVMEp);
+    if ( Param.useProfile == NO ) {
+        /* Close the material database */
+        etree_close(Global.theCVMEp);
+    }
 #else
     free(Global.theCVMRecord);
 #endif /* USECVMDB */
@@ -6937,20 +6939,21 @@ static void read_profile (  const char* parametersin ) {
         solver_abort(fname, NULL, "Error reading the number of layers from %s\n", parametersin);
     }
 
-    auxtable            = (double*)malloc(sizeof(float) * Param.theNumberOfLayers * 6);
-    Param.theProfileVp  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-    Param.theProfileVs  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-    Param.theProfileRho = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-    Param.theProfileQp  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-    Param.theProfileQs  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+    auxtable            = (double*)malloc(sizeof(double) * Param.theNumberOfLayers * 6);
+    Param.theProfileZ   = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileVp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileVs  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileRho = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileQp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileQs  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
 
-    if ( auxtable            == NULL ||
-         Param.theProfileZ   == NULL ||
-         Param.theProfileVp  == NULL ||
-         Param.theProfileVs  == NULL ||
-         Param.theProfileRho == NULL ||
-         Param.theProfileQp  == NULL ||
-         Param.theProfileQs  == NULL ) {
+    if ( (auxtable            == NULL) ||
+         (Param.theProfileZ   == NULL) ||
+         (Param.theProfileVp  == NULL) ||
+         (Param.theProfileVs  == NULL) ||
+         (Param.theProfileRho == NULL) ||
+         (Param.theProfileQp  == NULL) ||
+         (Param.theProfileQs  == NULL) ) {
         solver_abort(fname, NULL, "Error allocating memory for the profile\n");
     }
 
@@ -6959,12 +6962,12 @@ static void read_profile (  const char* parametersin ) {
     }
 
     for (iLayer = 0; iLayer < Param.theNumberOfLayers; iLayer++) {
-        Param.theProfileZ  [iLayer] = auxtable[ iLayer * 5     ];
-        Param.theProfileVp [iLayer] = auxtable[ iLayer * 5 + 1 ];
-        Param.theProfileVs [iLayer] = auxtable[ iLayer * 5 + 2 ];
-        Param.theProfileRho[iLayer] = auxtable[ iLayer * 5 + 3 ];
-        Param.theProfileQp [iLayer] = auxtable[ iLayer * 5 + 4 ];
-        Param.theProfileQs [iLayer] = auxtable[ iLayer * 5 + 5 ];
+        Param.theProfileZ  [iLayer] = auxtable[ iLayer * 6     ];
+        Param.theProfileVp [iLayer] = auxtable[ iLayer * 6 + 1 ];
+        Param.theProfileVs [iLayer] = auxtable[ iLayer * 6 + 2 ];
+        Param.theProfileRho[iLayer] = auxtable[ iLayer * 6 + 3 ];
+        Param.theProfileQp [iLayer] = auxtable[ iLayer * 6 + 4 ];
+        Param.theProfileQs [iLayer] = auxtable[ iLayer * 6 + 5 ];
     }
 
     return;
@@ -6979,12 +6982,12 @@ void broadcast_profile() {
     static const char* fname = __FUNCTION_NAME;
 
     if ( Global.myID != 0 ) {
-        Param.theProfileZ   = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-        Param.theProfileVp  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-        Param.theProfileVs  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-        Param.theProfileRho = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-        Param.theProfileQp  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
-        Param.theProfileQs  = (double*)malloc(sizeof(float) * Param.theNumberOfLayers);
+        Param.theProfileZ   = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileVp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileVs  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileRho = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileQp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileQs  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
     }
 
     if ( Param.theProfileZ   == NULL ||
