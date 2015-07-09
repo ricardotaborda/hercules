@@ -128,8 +128,12 @@ void MultAddMatVec( fmatrix_t* M, fvector_t* V1, double c, fvector_t* V2 )
 int Search_Quality_Table(double Q, double *theQTABLE, int QTable_Size)
 {
 
-	if(Q <= 500)
-	{
+    if (Q > 475) {
+        return QTable_Size-1;
+    }
+
+	if (Q <= 475) {
+
 		int i, range;
 		double diff, min;
 
