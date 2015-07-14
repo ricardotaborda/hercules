@@ -2314,6 +2314,24 @@ toexpand(octant_t *leaf, double ticksize, const void *data) {
 		}
 	}
 
+    double   x_m, y_m, z_m;
+    double   esize;
+
+    x_m = leaf->lx * ticksize;
+    y_m = leaf->ly * ticksize;
+    z_m = leaf->lz * ticksize;
+
+    if ( (x_m >  61835) && (x_m <  62835)
+         (y_m > 110178) && (y_m < 111178)
+         (z_m >   4500) && (z_m <   5500) ) {
+
+                if (edata->edgesize <= edata->Vs / (1.6*Param.theFactor) ) {
+                    return 0;
+                } else {
+                    return 1;
+                }
+    }
+
 	return vsrule( edata, Param.theFactor );
 }
 
