@@ -2315,7 +2315,6 @@ toexpand(octant_t *leaf, double ticksize, const void *data) {
 	}
 
     double   x_m, y_m, z_m;
-    double   esize;
 
     x_m = leaf->lx * ticksize;
     y_m = leaf->ly * ticksize;
