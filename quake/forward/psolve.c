@@ -1139,8 +1139,8 @@ int profile_query(double depth, cvmpayload_t* props) {
     
     if ( depth >= Param.theProfileZ[last] ) {
         props->Vp  = Param.theProfileVp[last];
-        props->Vs  = Param.theProfileVp[last];
-        props->rho = Param.theProfileVp[last];
+        props->Vs  = Param.theProfileVs[last];
+        props->rho = Param.theProfileRho[last];
         return 0;
     }
     
