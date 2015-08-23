@@ -7463,13 +7463,12 @@ mesh_correct_properties( etree_t* cvm )
         	vs = edata->Vs * 0.001;
         	L = 4. / 3. * vs_vp_Ratio * vs_vp_Ratio;
 
-          	//Qs = 0.02 * edata->Vs;
+        	// Special for La Habra runs
+          	Qs = 0.1 * edata->Vs;
+        	Qp = 2. * Qs;
 
         	// Ricardo's Formula based on Brocher's paper (2008) on the subject. In the paper Qp = 2*Qs is given.
-        	//TODO : Make sure Qp Qs relation is correct...
-
-        	Qs = 10.5 + vs * (-16. + vs * (153. + vs * (-103. + vs * (34.7 + vs * (-5.29 + vs * 0.31)))));
-        	Qp = 2. * Qs;
+        	// Qs = 10.5 + vs * (-16. + vs * (153. + vs * (-103. + vs * (34.7 + vs * (-5.29 + vs * 0.31)))));
 
         	if (Param.useInfQk == YES) {
         	    Qk = 1000;
