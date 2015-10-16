@@ -7373,7 +7373,7 @@ mesh_correct_properties( etree_t* cvm )
     // INTRODUCE BKT MODEL
 
     double Qs, Qp, Qk, L, vs_vp_Ratio, vksquared, w;
-    int index_Qs, index_Qk;
+//    int index_Qs, index_Qk;
     int QTable_Size = (int)(sizeof(Global.theQTABLE)/( 6 * sizeof(double)));
 
     points[0] = 0.005;
@@ -7525,25 +7525,25 @@ mesh_correct_properties( etree_t* cvm )
                 Qk = (1. - L) / (1. / Qp - L / Qs);
         	}
 
-        	index_Qs = Search_Quality_Table(Qs, &(Global.theQTABLE[0][0]), QTable_Size);
+//        	index_Qs = Search_Quality_Table(Qs, &(Global.theQTABLE[0][0]), QTable_Size);
 
 //        	printf("Quality Factor Table\n Qs : %lf \n Vs : %lf\n",Qs,edata->Vs);
 
-        	if(index_Qs == -2 || index_Qs >= QTable_Size)
-        	{
-        		fprintf(stderr,"Problem with the Quality Factor Table\n Qs : %lf \n Vs : %lf\n",Qs,edata->Vs);
-        		exit(1);
-        	}
-        	else if(index_Qs == -1)
-        	{
-        		edata->a0_shear = 0;
-        		edata->a1_shear = 0;
-        		edata->g0_shear = 0;
-        		edata->g1_shear = 0;
-        		edata->b_shear  = 0;
-        	}
-        	else
-        	{
+//        	if(index_Qs == -2 || index_Qs >= QTable_Size)
+//        	{
+//        		fprintf(stderr,"Problem with the Quality Factor Table\n Qs : %lf \n Vs : %lf\n",Qs,edata->Vs);
+//        		exit(1);
+//        	}
+//        	else if(index_Qs == -1)
+//        	{
+//        		edata->a0_shear = 0;
+//        		edata->a1_shear = 0;
+//        		edata->g0_shear = 0;
+//        		edata->g1_shear = 0;
+//        		edata->b_shear  = 0;
+//        	}
+//        	else
+//        	{
 
         		edata->a0_shear = (-2.66*pow(Qs,-0.88)+1.68)*Qs;
         		edata->a1_shear = (-0.56*pow(Qs,-1.03)+1.26)*Qs;
@@ -7551,33 +7551,33 @@ mesh_correct_properties( etree_t* cvm )
         		edata->g1_shear = 9.68238;
         		edata->b_shear  = (0.19*pow(Qs,-0.92)+0.61)*(2*PI*Param.theFreq)*Qs;
 
-        	}
+//        	}
 
-        	index_Qk = Search_Quality_Table(Qk, &(Global.theQTABLE[0][0]), QTable_Size);
+//        	index_Qk = Search_Quality_Table(Qk, &(Global.theQTABLE[0][0]), QTable_Size);
 
 //        	printf("Quality Factor Table\n Qs : %lf \n Vs : %lf\n",Qs,edata->Vs);
-
-        	if(index_Qk == -2 || index_Qk >= QTable_Size)
-        	{
-        		fprintf(stderr,"Problem with the Quality Factor Table\n Qk : %lf \n Vs : %lf\n",Qk,edata->Vs);
-        		exit(1);
-        	}
-        	else if(index_Qk == -1)
-        	{
-        		edata->a0_kappa = 0;
-        		edata->a1_kappa = 0;
-        		edata->g0_kappa = 0;
-        		edata->g1_kappa = 0;
-        		edata->b_kappa  = 0;
-        	}
-        	else
-        	{
+//
+//        	if(index_Qk == -2 || index_Qk >= QTable_Size)
+//        	{
+//        		fprintf(stderr,"Problem with the Quality Factor Table\n Qk : %lf \n Vs : %lf\n",Qk,edata->Vs);
+//        		exit(1);
+//        	}
+//        	else if(index_Qk == -1)
+//        	{
+//        		edata->a0_kappa = 0;
+//        		edata->a1_kappa = 0;
+//        		edata->g0_kappa = 0;
+//        		edata->g1_kappa = 0;
+//        		edata->b_kappa  = 0;
+//        	}
+//        	else
+//        	{
         		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)*Qk;
                 edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)*Qk;
                 edata->g0_shear = 1.17181;
                 edata->g1_shear = 9.68238;
                 edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)*(2*PI*Param.theFreq)*Qk;
-        	}
+//        	}
 
         	if(Param.theFreq_Vel != 0.)
         	{
