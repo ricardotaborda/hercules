@@ -7538,8 +7538,8 @@ mesh_correct_properties( etree_t* cvm )
         	{
         		edata->a0_shear = 0;
         		edata->a1_shear = 0;
-        		edata->g0_shear = 0;
-        		edata->g1_shear = 0;
+        		edata->g0_shear = 1.17181;
+        		edata->g1_shear = 9.68238;
         		edata->b_shear  = 0;
         	}
         	else
@@ -7564,8 +7564,8 @@ mesh_correct_properties( etree_t* cvm )
         	{
         		edata->a0_kappa = 0;
         		edata->a1_kappa = 0;
-        		edata->g0_kappa = 0;
-        		edata->g1_kappa = 0;
+        		edata->g0_kappa = 1.17181;
+        		edata->g1_kappa = 9.68238;
         		edata->b_kappa  = 0;
         	}
         	else
