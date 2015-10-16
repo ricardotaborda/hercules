@@ -7572,11 +7572,11 @@ mesh_correct_properties( etree_t* cvm )
         	}
         	else
         	{
-        		edata->a0_kappa = Global.theQTABLE[index_Qk][1];
-        		edata->a1_kappa = Global.theQTABLE[index_Qk][2];
-        		edata->g0_kappa = Global.theQTABLE[index_Qk][3];
-        		edata->g1_kappa = Global.theQTABLE[index_Qk][4];
-        		edata->b_kappa  = Global.theQTABLE[index_Qk][5];
+        		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)*Qk;
+                edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)*Qk;
+                edata->g0_shear = 1.17181;
+                edata->g1_shear = 9.68238;
+                edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)*(2*PI*Param.theFreq)*Qk;
         	}
 
         	if(Param.theFreq_Vel != 0.)
