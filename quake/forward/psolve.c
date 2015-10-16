@@ -7538,17 +7538,19 @@ mesh_correct_properties( etree_t* cvm )
         	{
         		edata->a0_shear = 0;
         		edata->a1_shear = 0;
-        		edata->g0_shear = 1.17181;
-        		edata->g1_shear = 9.68238;
+        		edata->g0_shear = 0;
+        		edata->g1_shear = 0;
         		edata->b_shear  = 0;
         	}
         	else
         	{
-        		edata->a0_shear = Global.theQTABLE[index_Qs][1];
-        		edata->a1_shear = Global.theQTABLE[index_Qs][2];
-        		edata->g0_shear = Global.theQTABLE[index_Qs][3];
-        		edata->g1_shear = Global.theQTABLE[index_Qs][4];
-        		edata->b_shear  = Global.theQTABLE[index_Qs][5];
+
+        		edata->a0_shear = (-2.66*pow(Qs,-0.88)+1.68)*Qs;
+        		edata->a1_shear = (-0.56*pow(Qs,-1.03)+1.26)*Qs;
+        		edata->g0_shear = 1.17181;
+        		edata->g1_shear = 9.68238;
+        		edata->b_shear  = (0.19*pow(Qs,-0.92)+0.61)*(2*PI*Param.theFreq)*Qs;
+
         	}
 
         	index_Qk = Search_Quality_Table(Qk, &(Global.theQTABLE[0][0]), QTable_Size);
@@ -7564,8 +7566,8 @@ mesh_correct_properties( etree_t* cvm )
         	{
         		edata->a0_kappa = 0;
         		edata->a1_kappa = 0;
-        		edata->g0_kappa = 1.17181;
-        		edata->g1_kappa = 9.68238;
+        		edata->g0_kappa = 0;
+        		edata->g1_kappa = 0;
         		edata->b_kappa  = 0;
         	}
         	else
