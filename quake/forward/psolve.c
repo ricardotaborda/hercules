@@ -7545,11 +7545,11 @@ mesh_correct_properties( etree_t* cvm )
 //        	else
 //        	{
 
-        		edata->a0_shear = (-2.66*pow(Qs,-0.88)+1.68)*Qs;
-        		edata->a1_shear = (-0.56*pow(Qs,-1.03)+1.26)*Qs;
-        		edata->g0_shear = 1.17181;
-        		edata->g1_shear = 9.68238;
-        		edata->b_shear  = (0.19*pow(Qs,-0.92)+0.61)*(2*PI*Param.theFreq)*Qs;
+        		edata->a0_shear = (-2.66*pow(Qs,-0.88)+1.68)/Qs;
+        		edata->a1_shear = (-0.56*pow(Qs,-1.03)+1.26)/Qs;
+        		edata->g0_shear = 0.0373;
+        		edata->g1_shear = 0.3082;
+        		edata->b_shear  = (0.19*pow(Qs,-0.92)+0.61)/Qs;
 
 //        	}
 
@@ -7572,11 +7572,11 @@ mesh_correct_properties( etree_t* cvm )
 //        	}
 //        	else
 //        	{
-        		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)*Qk;
-                edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)*Qk;
-                edata->g0_shear = 1.17181;
-                edata->g1_shear = 9.68238;
-                edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)*(2*PI*Param.theFreq)*Qk;
+        		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)/Qk;
+                edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)/Qk;
+                edata->g0_shear = 0.0373;
+                edata->g1_shear = 0.3082;
+                edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)/Qk;
 //        	}
 
         	if(Param.theFreq_Vel != 0.)
