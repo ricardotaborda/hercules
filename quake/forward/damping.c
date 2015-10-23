@@ -111,7 +111,9 @@ void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theD
 
     int32_t eindex;
     int i;
-    double rmax = 2. * M_PI * theFreq * theDeltaT;
+    //double rmax = 2. * M_PI * theFreq * theDeltaT;
+      double rmax = theDeltaT;
+
 
     for (eindex = 0; eindex < myMesh->lenum; eindex++)
     {
@@ -234,7 +236,8 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
 	int32_t   eindex;
 	fvector_t damping_vector_shear[8], damping_vector_kappa[8];
 
-	double rmax = 2. * M_PI * theFreq * theDeltaT;
+	//double rmax = 2. * M_PI * theFreq * theDeltaT;
+	double rmax = theDeltaT;
 
 	/* theAddForceETime -= MPI_Wtime(); */
 
@@ -263,13 +266,13 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
 
 	        double coef_shear = b_shear / rmax;
 
+
             for (i = 0; i < 8; i++) {
 
                 fvector_t *tm1Disp, *tm2Disp, *f0_tm1, *f1_tm1;
                 int32_t    lnid, cindex;
 
                 cindex = eindex * 8 + i;
-
                 lnid = elemp->lnid[i];
 
                 tm1Disp = mySolver->tm1 + lnid;
@@ -321,6 +324,7 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
         if ( csum != 0 ) {
 
             double coef_kappa = b_kappa / rmax;
+
 
             for (i = 0; i < 8; i++) {
 

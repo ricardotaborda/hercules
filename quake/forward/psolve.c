@@ -7374,7 +7374,7 @@ mesh_correct_properties( etree_t* cvm )
 
     double Qs, Qp, Qk, L, vs_vp_Ratio, vksquared, w;
 //    int index_Qs, index_Qk;
-    int QTable_Size = (int)(sizeof(Global.theQTABLE)/( 6 * sizeof(double)));
+//    int QTable_Size = (int)(sizeof(Global.theQTABLE)/( 6 * sizeof(double)));
 
     points[0] = 0.005;
     points[1] = 0.5;
@@ -7545,11 +7545,13 @@ mesh_correct_properties( etree_t* cvm )
 //        	else
 //        	{
 
+
+
         		edata->a0_shear = (-2.66*pow(Qs,-0.88)+1.68)/Qs;
         		edata->a1_shear = (-0.56*pow(Qs,-1.03)+1.26)/Qs;
-        		edata->g0_shear = 0.0373;
-        		edata->g1_shear = 0.3082;
-        		edata->b_shear  = (0.19*pow(Qs,-0.92)+0.61)/Qs;
+        		edata->g0_shear = 0.0373*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
+        		edata->g1_shear = 0.3082*(2. * M_PI * Param.theFreq); // g1_shear = normilized_gamma * ( 2 * pi * fmax);
+        		edata->b_shear  = (0.19*pow(Qs,-0.92)+0.61)/(Qs*2. * M_PI * Param.theFreq); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
 
 //        	}
 
@@ -7572,12 +7574,32 @@ mesh_correct_properties( etree_t* cvm )
 //        	}
 //        	else
 //        	{
-        		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)/Qk;
-                edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)/Qk;
-                edata->g0_shear = 0.0373;
-                edata->g1_shear = 0.3082;
-                edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)/Qk;
-//        	}
+//        		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)/Qk;
+//                edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)/Qk;
+//                edata->g0_shear = 0.0373*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
+//                edata->g1_shear = 0.3082*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
+//                edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)/(Qk*2. * M_PI * Param.theFreq); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
+////        	}
+
+                if(Param.useInfQk == YES)
+                        	{
+                  	            edata->a0_kappa = 0;
+                                edata->a1_kappa = 0;
+                                edata->g0_kappa = 0;
+                                edata->g1_kappa = 0;
+                                edata->b_kappa  = 0;
+                        	}
+                        	else
+                        	{
+                        		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)/Qk;
+                                edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)/Qk;
+                                edata->g0_shear = 0.0373*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
+                                edata->g1_shear = 0.3082*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
+                                edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)/(Qk*2. * M_PI * Param.theFreq); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
+
+                        	}
+
+
 
         	if(Param.theFreq_Vel != 0.)
         	{
