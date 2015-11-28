@@ -380,8 +380,8 @@ monitor_print( const char* format, ... )
 
 static void read_parameters( int argc, char** argv ){
 
-#define LOCAL_INIT_DOUBLE_MESSAGE_LENGTH 18  /* Must adjust this if adding double params */
-#define LOCAL_INIT_INT_MESSAGE_LENGTH 21     /* Must adjust this if adding int params */
+#define LOCAL_INIT_DOUBLE_MESSAGE_LENGTH 21  /* Must adjust this if adding double params */
+#define LOCAL_INIT_INT_MESSAGE_LENGTH 22     /* Must adjust this if adding int params */
 
     double  double_message[LOCAL_INIT_DOUBLE_MESSAGE_LENGTH];
     int     int_message[LOCAL_INIT_INT_MESSAGE_LENGTH];
@@ -7510,9 +7510,10 @@ mesh_correct_properties( etree_t* cvm )
 
             if ( Param.useParametricQ == YES ){
 	        Qs = Param.theQConstant + Param.theQAlpha * pow(vs,Param.theQBeta);
-	        } else {
+		        } else {
             Qs = 10.5 + vs * (-16. + vs * (153. + vs * (-103. + vs * (34.7 + vs * (-5.29 + vs * 0.31)))));
-	        }
+	        	}
+
 
         	Qp = 2. * Qs;
 
