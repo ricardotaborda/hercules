@@ -6,38 +6,46 @@
 
 #include "bengalbasin.h"
 
-theprops_t* getmantlevalues(float depth_m, float mindepth);
-theprops_t* getcrustvalues(float depth_m, float mindepth);
-theprops_t* getbasinvalues(float depth_m, float maxdepth);
+theprops_t* getmantlevalues(double depth_m, double mindepth);
+theprops_t* getcrustvalues(double depth_m, double mindepth);
+theprops_t* getbasinvalues(double depth_m, double maxdepth);
 
-int bengal_cvm_query(FILE *fp, float east_m, float north_m, float depth_m, theprops_t* result)
+int bengal_cvm_query(FILE *fp, double east_m, double north_m, double depth_m, theprops_t* result)
 {
 
-	float minlat= 19.9;
-	float maxlat= 27;
-	float minlong= 86.5;
-	float maxlong= 93.4;
-	float value;
-	float val1;
-	float val2;
-	float val3;
-	float val4;
-	float dlat = (maxlat-minlat)/2000;
-	float dlong = (maxlong-minlong)/2000;
+	double minlat= 19.9;
+	double maxlat= 27;
+	double minlong= 86.5;
+	double maxlong= 93.4;
+	double value;
+	double val1;
+	double val2;
+	double val3;
+	double val4;
+	double dlat = (maxlat-minlat)/2000;
+	double dlong = (maxlong-minlong)/2000;
 	long byteval1;
 	long byteval2;
 	long byteval3;
 	long byteval4;
 
-	float inputlat = minlat + north_m/(111.01*1000);
-	float inputlong = minlong + east_m/(111.01*1000);
+	double inputlat  = minlat  + north_m / (111.01*1000);
+	double inputlong = minlong + east_m  / (111.01*1000);
 
-	float diflat = inputlat-minlat;
-	float diflong = inputlong-minlong;
+	double diflat  = inputlat  - minlat;
+	double diflong = inputlong - minlong;
 
-	if(inputlat>maxlat || inputlat<minlat || inputlong<minlong || inputlong>maxlong){
-		printf("The co-ordinate is out of the region");
-		return 0;
+	if (inputlat > maxlat) inputlat = maxlat;
+	if (inputlong > maxlong ) inputlong = maxlong;
+
+	//  if( (inputlat > maxlat) || (inputlat < minlat) || (inputlong < minlong) || (inputlong > maxlong) ) {
+	//      printf("The coordinate is out of the region");
+	//      return 1;
+	//  }
+
+	if( (inputlat < minlat) || (inputlong < minlong) ) {
+	    printf("The coordinate is out of the region");
+	    return 1;
 	}
 
 	long intervalnumberlongitude = diflong/dlong;
@@ -74,11 +82,11 @@ int bengal_cvm_query(FILE *fp, float east_m, float north_m, float depth_m, thepr
 	    byteval3 = byteval2 - 4;
 	    byteval4 = byteval1 - 4;
 
-	    float lat1 = intervalnumberlatitude*dlat+minlat;
-	    float lat2 = lat1 + dlat;
+	    double lat1 = intervalnumberlatitude*dlat+minlat;
+	    double lat2 = lat1 + dlat;
 
-	    float long1 = intervalnumberlongitude*dlong+minlong;
-	    float long2 = long1 - dlong;
+	    double long1 = intervalnumberlongitude*dlong+minlong;
+	    double long2 = long1 - dlong;
 
 	    /* seeking values */
 	    fseek(fp, byteval1, SEEK_SET);
@@ -93,8 +101,8 @@ int bengal_cvm_query(FILE *fp, float east_m, float north_m, float depth_m, thepr
 	    fseek(fp, byteval4, SEEK_SET);
 	    fread(&val4, 4, 1, fp);
 
-	    float R1 = ((long2-east_m)/(long2-long1))*val1 + ((east_m-long1)/(long2-long1))*val2;
-	    float R2 = ((long2-east_m)/(long2-long1))*val4 + ((east_m-long1)/(long2-long1))*val3;
+	    double R1 = ((long2-east_m)/(long2-long1))*val1 + ((east_m-long1)/(long2-long1))*val2;
+	    double R2 = ((long2-east_m)/(long2-long1))*val4 + ((east_m-long1)/(long2-long1))*val3;
 
 	    value = ( (lat2-north_m)/(lat2-lat1) ) * R1 + ( (north_m-lat1)/(lat2-lat1) ) * R2;
 	}
@@ -117,13 +125,15 @@ int bengal_cvm_query(FILE *fp, float east_m, float north_m, float depth_m, thepr
 	return 0;
 }
 
-theprops_t* getbasinvalues(float depth_m, float maxdepth){
+theprops_t* getbasinvalues(double depth_m, double maxdepth){
 
-    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));;
-	float minvs = 500;
-	float maxvs = 2000;
-	float mindensity = 2400;
-	float maxdensity = 2800;
+    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));
+
+    double minvs = 500;
+    double maxvs = 2000;
+    double mindensity = 2400;
+    double maxdensity = 2800;
+
 	float vs;
 	float density;
 	float vp = 0.0;
@@ -135,9 +145,9 @@ theprops_t* getbasinvalues(float depth_m, float maxdepth){
 		density = mindensity/1000;
 	} else {
 		maxdepth = maxdepth*-1;
-		vs = (minvs+((maxvs-minvs)*(depth_m-mindepth))/(maxdepth-mindepth));
-		vp = 2.2*vs;
-		density = (mindensity+((maxdensity-mindensity)*(depth_m-mindepth))/(maxdepth-mindepth));
+		vs = (float)( minvs + ( (maxvs - minvs)*(depth_m - mindepth) )/(maxdepth - mindepth) );
+		vp = 2.2 * vs;
+		density = (float)( mindensity + ( (maxdensity - mindensity)*(depth_m - mindepth) )/(maxdepth - mindepth) );
 	}
 
 	result->Vs = vs;
@@ -147,23 +157,25 @@ theprops_t* getbasinvalues(float depth_m, float maxdepth){
 	return result;
 }
 
-theprops_t* getcrustvalues(float depth_m, float mindepth){
+theprops_t* getcrustvalues(double depth_m, double mindepth){
 
-    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));;
-	float minvs = 2700;
-	float maxvs = 4200;
-	float mindensity = 2900;
-	float maxdensity = 3100;
-	float vs;
+    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));
+
+    double minvs = 2700;
+    double maxvs = 4200;
+    double mindensity = 2900;
+    double maxdensity = 3100;
+
+    float vs;
 	float density;
 	float vp;
 
 	mindepth = mindepth*-1;
 
-	float maxdepth = mindepth+20000;
-	vs = (minvs+((maxvs-minvs)*(depth_m-mindepth))/(maxdepth-mindepth));
+	double maxdepth = mindepth+20000;
+	vs = (float)(minvs+((maxvs-minvs)*(depth_m-mindepth))/(maxdepth-mindepth));
 	vp = 1.8*vs;
-	density = (mindensity+((maxdensity-mindensity)*(depth_m-mindepth))/(maxdepth-mindepth));
+	density = (float)(mindensity+((maxdensity-mindensity)*(depth_m-mindepth))/(maxdepth-mindepth));
 
     result->Vs = vs;
     result->Vp = vp;
@@ -172,18 +184,21 @@ theprops_t* getcrustvalues(float depth_m, float mindepth){
     return result;
 }
 
-theprops_t* getmantlevalues(float depth_m, float mindepth){
+theprops_t* getmantlevalues(double depth_m, double mindepth){
 
-    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));;
-	float minvs = 4500;
-	float maxvs = 6000;
-	float vs;
+    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));
+
+    double minvs = 4500;
+    double maxvs = 6000;
+
+    float vs;
 	float vp;
 	float density;
 
 	mindepth = mindepth*-1 + 20000;
-	float maxdepth = 40000;
-	vs = (minvs+((maxvs-minvs)*(depth_m-mindepth))/(maxdepth-mindepth));
+	double maxdepth = 40000;
+
+	vs = (float)(minvs+((maxvs-minvs)*(depth_m-mindepth))/(maxdepth-mindepth));
 	vp = 1.8*vs;
 	density = 3300;
 

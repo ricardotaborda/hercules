@@ -2334,7 +2334,7 @@ mesh_generate()
     }
 
 #ifdef USECVMDB
-    if ( Param.useProfile == NO ) {
+    if ( (Param.useProfile == NO) && (Param.useBengalBasin == NO) ) {
         /* Close the material database */
         etree_close(Global.theCVMEp);
     }
@@ -7411,10 +7411,10 @@ mesh_correct_properties( etree_t* cvm )
     points[1] = 0.5;
     points[2] = 0.995;
 
-    if (Global.myID == 0) {
-        fprintf( stdout,"mesh_correct_properties  ... " );
-        fflush( stdout );
-    }
+//    if (Global.myID == 0) {
+//        fprintf( stdout,"mesh_correct_properties  ... " );
+//        fflush( stdout );
+//    }
 
     /* iterate over mesh elements */
     for (eindex = 0; eindex < Global.myMesh->lenum; eindex++) {
@@ -7474,7 +7474,7 @@ mesh_correct_properties( etree_t* cvm )
                     }
 
         			if (res != 0) {
-        				fprintf(stderr, "Cannot find the query point\n");
+        				fprintf(stderr, "Cannot find the query point: %f %f %f \n", east_m, north_m, depth_m);
         				exit(1);
         			}
 
