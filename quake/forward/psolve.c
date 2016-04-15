@@ -4160,10 +4160,10 @@ solver_compute_force_damping( mysolver_t *solver,
 	}
 	else
 	{
-	    /* Should never reach this point */
-        solver_abort( __FUNCTION_NAME, NULL,
-                "Unknown damping type: %d\n",
-                Param.theTypeOfDamping);
+//	    /* Should never reach this point */
+//        solver_abort( __FUNCTION_NAME, NULL,
+//                "Unknown damping type: %d\n",
+//                Param.theTypeOfDamping);
 	}
 
 	Timer_Stop( "Damping addforce" );
