@@ -12,6 +12,6 @@ typedef struct theprops_t {
     float Vp, Vs, rho;
 } theprops_t;
 
-int bengal_cvm_query(FILE *fp, float east_m, float north_m, float depth_m, theprops_t* result);
+int bengal_cvm_query(FILE *fp, double east_m, double north_m, double depth_m, theprops_t* result);
 
 #endif /* BENGALBASIN_H_ */
