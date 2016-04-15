@@ -25,7 +25,7 @@
 typedef enum
 {
 
-  RAYLEIGH = 0, MASS, NONE, BKT
+  RAYLEIGH = 0, MASS, NONE, BKT, BKT2, BKT3, BKT3F
 
 } damping_type_t;
 

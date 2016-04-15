@@ -741,7 +741,13 @@ static int32_t parse_parameters( const char* numericalin )
     } else if (strcasecmp(type_of_damping, "none") == 0) {
     	typeOfDamping = NONE;
     } else if (strcasecmp(type_of_damping, "bkt") == 0) {
-    	typeOfDamping = BKT;
+        typeOfDamping = BKT;
+    } else if (strcasecmp(type_of_damping, "bkt2") == 0) {
+        typeOfDamping = BKT2;
+    } else if (strcasecmp(type_of_damping, "bkt3") == 0) {
+        typeOfDamping = BKT3;
+    } else if (strcasecmp(type_of_damping, "bkt3f") == 0) {
+        typeOfDamping = BKT3F;
     } else {
     	solver_abort( __FUNCTION_NAME, NULL,
     			"Unknown damping type: %s\n",
@@ -4116,7 +4122,9 @@ solver_compute_force_stiffness( mysolver_t *solver,
                                 fmatrix_t   k2[8][8] )
 {
 	Timer_Start( "Compute addforces e" );
-	if(Param.theTypeOfDamping != BKT)
+
+	/* If damping is not of the BKT family */
+	if( Param.theTypeOfDamping < BKT )
 	{
 		if (Param.theStiffness == EFFECTIVE) {
 			compute_addforce_effective( mesh, solver );
@@ -4125,6 +4133,7 @@ solver_compute_force_stiffness( mysolver_t *solver,
 			compute_addforce_conventional( mesh, solver, k1, k2 );
 		}
 	}
+
 	Timer_Stop( "Compute addforces e" );
 }
 
@@ -4140,16 +4149,22 @@ solver_compute_force_damping( mysolver_t *solver,
 
 	if(Param.theTypeOfDamping == RAYLEIGH  || Param.theTypeOfDamping == MASS)
 	{
+	    /* If damping is not of the BKT family */
 		damping_addforce(Global.myMesh, Global.mySolver, Global.theK1, Global.theK2);
 	}
-	else if(Param.theTypeOfDamping == BKT)
+	else if(Param.theTypeOfDamping >= BKT)
 	{
+	    /* Else, if damping is of the BKT family */
 		calc_conv(Global.myMesh, Global.mySolver, Param.theFreq, Param.theDeltaT, Param.theDeltaTSquared);
-		//addforce_conv(myMesh, mySolver, theFreq, theDeltaT, theDeltaTSquared);
 		constant_Q_addforce(Global.myMesh, Global.mySolver, Param.theFreq, Param.theDeltaT, Param.theDeltaTSquared);
 	}
 	else
-	{}
+	{
+	    /* Should never reach this point */
+        solver_abort( __FUNCTION_NAME, NULL,
+                "Unknown damping type: %d\n",
+                Param.theTypeOfDamping);
+	}
 
 	Timer_Stop( "Damping addforce" );
 }
@@ -6016,7 +6031,7 @@ static void compute_setab(double freq, double *aBasePtr, double *bBasePtr)
         *aBasePtr = 1.3*numer / denom;  /* this 1.3 comes out from heuristics */
         *bBasePtr = 0;
     }
-    else if ( Param.theTypeOfDamping == NONE || Param.theTypeOfDamping == BKT )
+    else if ( Param.theTypeOfDamping == NONE || Param.theTypeOfDamping >= BKT )
     {
         *aBasePtr = 0;
         *bBasePtr = 0;
@@ -7370,20 +7385,16 @@ mesh_correct_properties( etree_t* cvm )
     double   points[3];
     int32_t  lnid0;
 
-    // INTRODUCE BKT MODEL
-
-    double Qs, Qp, Qk, L, vs_vp_Ratio, vksquared, w;
-//    int index_Qs, index_Qk;
-//    int QTable_Size = (int)(sizeof(Global.theQTABLE)/( 6 * sizeof(double)));
+    double Qs, Qp, Qk, L;
 
     points[0] = 0.005;
     points[1] = 0.5;
     points[2] = 0.995;
 
-//    if (Global.myID == 0) {
-//        fprintf( stdout,"mesh_correct_properties  ... " );
-//        fflush( stdout );
-//    }
+    if (Global.myID == 0) {
+        fprintf( stdout,"mesh_correct_properties  ... " );
+        fflush( stdout );
+    }
 
     /* iterate over mesh elements */
     for (eindex = 0; eindex < Global.myMesh->lenum; eindex++) {
@@ -7486,39 +7497,46 @@ mesh_correct_properties( etree_t* cvm )
         /* Readjust Vs, Vp and Density according to VsCut */
         if ( edata->Vs < Param.theVsCut ) {
             edata->Vs  = Param.theVsCut;
-            edata->Vp  = Param.theVsCut  * VpVsRatio;
+            edata->Vp  = Param.theVsCut * VpVsRatio;
             /* edata->rho = edata->Vp * RhoVpRatio; */ /* Discuss with Jacobo */
         }
 
 
-        // IMPLEMENT BKT MODEL
-
-        /* CALCULATE QUALITY FACTOR VALUES AND READ CORRESPONDING VISCOELASTICITY COEFFICIENTS FROM THE TABLE */
-
-        	/* L IS THE COEFFICIENT DEFINED BY "SHEARER-2009" TO RELATE QK, QS AND QP */
-
-        if(Param.theTypeOfDamping == BKT)
+        /*
+         * Definition of BTK-Family Damping parameters
+         */
+        if( Param.theTypeOfDamping >= BKT )
         {
+            double vs_vp_Ratio, vksquared;
+            double vs_kms = edata->Vs * 0.001; /* Vs in km/s */
 
             vksquared = edata->Vp * edata->Vp - 4. / 3. * edata->Vs * edata->Vs;
         	vs_vp_Ratio = edata->Vs / edata->Vp;
-        	vs = edata->Vs * 0.001;
-        	L = 4. / 3. * vs_vp_Ratio * vs_vp_Ratio;
+        	L = 4. / 3. * vs_vp_Ratio * vs_vp_Ratio; /* As defined in Shearer (2009) */
 
-        	// Special for La Habra runs
-          	//Qs = 0.1 * edata->Vs;
+        	if ( Param.useParametricQ == YES ) {
 
-            if ( Param.useParametricQ == YES ){
-	        Qs = Param.theQConstant + Param.theQAlpha * pow(vs,Param.theQBeta);
-		        } else {
-            Qs = 10.5 + vs * (-16. + vs * (153. + vs * (-103. + vs * (34.7 + vs * (-5.29 + vs * 0.31)))));
-	        	}
+        	    /* Use of the formula
+        	     *
+        	     * Qs = C + QAlpha * ( Vs ^ (QBeta) )
+        	     *
+                 * This formula was introduce by Ricardo and Naeem
+                 * and it is versatile enough and simpler than the
+                 * option used in Taborda and Bielak (2013, BSSA)
+                 */
+        	    Qs = Param.theQConstant + Param.theQAlpha * pow(vs_kms,Param.theQBeta);
 
+        	} else {
 
+                /* Use of the formula introduced by Ricardo in the
+                 * paper Taborda and Bielak (2013, BSSA) which is
+                 * based on the idea of Brocher (2005)
+                 */
+        	    Qs = 10.5 + vs_kms * (-16. + vs_kms * (153. + vs_kms * (-103. + vs_kms * (34.7 + vs_kms * (-5.29 + vs_kms * 0.31)))));
+        	}
+
+        	/* Default option for Qp */
         	Qp = 2. * Qs;
-
-        	// Ricardo's Formula based on Brocher's paper (2008) on the subject. In the paper Qp = 2*Qs is given.
-        	// Qs = 10.5 + vs * (-16. + vs * (153. + vs * (-103. + vs * (34.7 + vs * (-5.29 + vs * 0.31)))));
 
         	if (Param.useInfQk == YES) {
         	    Qk = 1000;
@@ -7526,97 +7544,120 @@ mesh_correct_properties( etree_t* cvm )
                 Qk = (1. - L) / (1. / Qp - L / Qs);
         	}
 
-//        	index_Qs = Search_Quality_Table(Qs, &(Global.theQTABLE[0][0]), QTable_Size);
+        	if ( Param.theTypeOfDamping == BKT ) {
 
-//        	printf("Quality Factor Table\n Qs : %lf \n Vs : %lf\n",Qs,edata->Vs);
+        	    /* Legacy implementation of original BKT
+        	     * model using a table to set parameters
+        	     */
 
-//        	if(index_Qs == -2 || index_Qs >= QTable_Size)
-//        	{
-//        		fprintf(stderr,"Problem with the Quality Factor Table\n Qs : %lf \n Vs : %lf\n",Qs,edata->Vs);
-//        		exit(1);
-//        	}
-//        	else if(index_Qs == -1)
-//        	{
-//        		edata->a0_shear = 0;
-//        		edata->a1_shear = 0;
-//        		edata->g0_shear = 0;
-//        		edata->g1_shear = 0;
-//        		edata->b_shear  = 0;
-//        	}
-//        	else
-//        	{
+        	    int index_Qs, index_Qk;
+        	    int QTable_Size = (int)(sizeof(Global.theQTABLE)/( 6 * sizeof(double)));
 
+        	    index_Qs = Search_Quality_Table(Qs, &(Global.theQTABLE[0][0]), QTable_Size);
+        	    index_Qk = Search_Quality_Table(Qk, &(Global.theQTABLE[0][0]), QTable_Size);
 
+        	    if ( (index_Qs == -2) || (index_Qs >= QTable_Size) ||
+        	         (index_Qk == -2) || (index_Qk >= QTable_Size) ) {
+        	        solver_abort( __FUNCTION_NAME, NULL, "Unexpected damping type: %d\n", Param.theTypeOfDamping);
+        	    }
 
-        		edata->a0_shear = (-2.66*pow(Qs,-0.88)+1.68)/Qs;
-        		edata->a1_shear = (-0.56*pow(Qs,-1.03)+1.26)/Qs;
-        		edata->g0_shear = 0.0373*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
-        		edata->g1_shear = 0.3082*(2. * M_PI * Param.theFreq); // g1_shear = normilized_gamma * ( 2 * pi * fmax);
-        		edata->b_shear  = (0.19*pow(Qs,-0.92)+0.61)/(Qs*2. * M_PI * Param.theFreq); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
+        	    if ( index_Qs == -1 ) {
+        	        edata->a0_shear = 0;
+        	        edata->a1_shear = 0;
+        	        edata->g0_shear = 0;
+        	        edata->g1_shear = 0;
+        	        edata->b_shear  = 0;
+        	    } else {
+                    edata->a0_shear = Global.theQTABLE[index_Qs][1];
+                    edata->a1_shear = Global.theQTABLE[index_Qs][2];
+                    edata->g0_shear = Global.theQTABLE[index_Qs][3];
+                    edata->g1_shear = Global.theQTABLE[index_Qs][4];
+                    edata->b_shear  = Global.theQTABLE[index_Qs][5];
+                }
 
-//        	}
+        	    if ( (Param.useInfQk == YES) || (index_Qk == -1) ) {
+        	        edata->a0_kappa = 0;
+        	        edata->a1_kappa = 0;
+        	        edata->g0_kappa = 0;
+        	        edata->g1_kappa = 0;
+        	        edata->b_kappa  = 0;
+        	    } else {
+                    edata->a0_kappa = Global.theQTABLE[index_Qk][1];
+                    edata->a1_kappa = Global.theQTABLE[index_Qk][2];
+                    edata->g0_kappa = Global.theQTABLE[index_Qk][3];
+                    edata->g1_kappa = Global.theQTABLE[index_Qk][4];
+                    edata->b_kappa  = Global.theQTABLE[index_Qk][5];
+                }
 
-//        	index_Qk = Search_Quality_Table(Qk, &(Global.theQTABLE[0][0]), QTable_Size);
+        	} else if ( Param.theTypeOfDamping == BKT2 ) {
 
-//        	printf("Quality Factor Table\n Qs : %lf \n Vs : %lf\n",Qs,edata->Vs);
-//
-//        	if(index_Qk == -2 || index_Qk >= QTable_Size)
-//        	{
-//        		fprintf(stderr,"Problem with the Quality Factor Table\n Qk : %lf \n Vs : %lf\n",Qk,edata->Vs);
-//        		exit(1);
-//        	}
-//        	else if(index_Qk == -1)
-//        	{
-//        		edata->a0_kappa = 0;
-//        		edata->a1_kappa = 0;
-//        		edata->g0_kappa = 0;
-//        		edata->g1_kappa = 0;
-//        		edata->b_kappa  = 0;
-//        	}
-//        	else
-//        	{
-//        		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)/Qk;
-//                edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)/Qk;
-//                edata->g0_shear = 0.0373*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
-//                edata->g1_shear = 0.3082*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
-//                edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)/(Qk*2. * M_PI * Param.theFreq); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
-////        	}
+        	    if ( Qs >= 1000 ) {
+                    edata->a0_shear = 0;
+                    edata->a1_shear = 0;
+                    edata->g0_shear = 0;
+                    edata->g1_shear = 0;
+                    edata->b_shear  = 0;
+        	    } else {
+                    edata->a0_shear = (-2.656 * pow(Qs, -0.879) + 1.677) / Qs;
+                    edata->a1_shear = (-0.562 * pow(Qs, -1.030) + 1.262) / Qs;
+                    edata->g0_shear = 0.0373 * (2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
+                    edata->g1_shear = 0.3082 * (2. * M_PI * Param.theFreq); // g1_shear = normilized_gamma * ( 2 * pi * fmax);
+                    edata->b_shear  = (0.188 * pow(Qs, -0.920) + 0.614) / (Qs * (2. * M_PI * Param.theFreq)); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
+        	    }
 
-                if(Param.useInfQk == YES)
-                        	{
-                  	            edata->a0_kappa = 0;
-                                edata->a1_kappa = 0;
-                                edata->g0_kappa = 0;
-                                edata->g1_kappa = 0;
-                                edata->b_kappa  = 0;
-                        	}
-                        	else
-                        	{
-                        		edata->a0_shear = (-2.66*pow(Qk,-0.88)+1.68)/Qk;
-                                edata->a1_shear = (-0.56*pow(Qk,-1.03)+1.26)/Qk;
-                                edata->g0_shear = 0.0373*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
-                                edata->g1_shear = 0.3082*(2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
-                                edata->b_shear  = (0.19*pow(Qk,-0.92)+0.61)/(Qk*2. * M_PI * Param.theFreq); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
+        	    if ( ( Param.useInfQk == YES ) || ( Qk >= 1000 ) ) {
+                    edata->a0_kappa = 0;
+                    edata->a1_kappa = 0;
+                    edata->g0_kappa = 0;
+                    edata->g1_kappa = 0;
+                    edata->b_kappa  = 0;
+        	    } else {
+                    edata->a0_kappa = (-2.656 * pow(Qs, -0.879) + 1.677) / Qs;
+                    edata->a1_kappa = (-0.562 * pow(Qs, -1.030) + 1.262) / Qs;
+                    edata->g0_kappa = 0.0373 * (2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
+                    edata->g1_kappa = 0.3082 * (2. * M_PI * Param.theFreq); // g1_shear = normilized_gamma * ( 2 * pi * fmax);
+                    edata->b_kappa  = (0.188 * pow(Qs, -0.920) + 0.614) / (Qs * (2. * M_PI * Param.theFreq)); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
+        	    }
 
-                        	}
+        	} else if ( Param.theTypeOfDamping == BKT3 ) {
+                /* PENDING */
+        	} else if ( Param.theTypeOfDamping == BKT3F ) {
+                /* PENDING */
+        	} else {
+                /* Should never reach this point */
+                solver_abort( __FUNCTION_NAME, NULL, "Unexpected damping type: %d\n", Param.theTypeOfDamping);
+        	}
 
+        	/*
+        	 * Phase velocity adjustment
+        	 */
+        	if(Param.theFreq_Vel != 0.) {
+        	    double w, w2;
+                double shear_vel_corr_factor = 1.0;
+                double kappa_vel_corr_factor = 1.0;
 
-
-        	if(Param.theFreq_Vel != 0.)
-        	{
         		w = Param.theFreq_Vel / Param.theFreq;
+        		w2 = w * w;
 
-        		if ( (edata->a0_shear != 0) && (edata->a1_shear != 0) ) {
-        		    double shear_vel_corr_factor;
-        		    shear_vel_corr_factor = sqrt(1. - (edata->a0_shear * edata->g0_shear * edata->g0_shear / (edata->g0_shear * edata->g0_shear + w * w) + edata->a1_shear * edata->g1_shear * edata->g1_shear / (edata->g1_shear * edata->g1_shear + w * w)));
-                    edata->Vs = shear_vel_corr_factor * edata->Vs;
-        		}
+                if ( (Param.theTypeOfDamping == BKT) || (Param.theTypeOfDamping == BKT2) ) {
+                    if ( (edata->a0_shear != 0) && (edata->a1_shear != 0) ) {
+                        shear_vel_corr_factor = sqrt(1. - (   edata->a0_shear * edata->g0_shear * edata->g0_shear / (edata->g0_shear * edata->g0_shear + w2)
+                                                            + edata->a1_shear * edata->g1_shear * edata->g1_shear / (edata->g1_shear * edata->g1_shear + w2) ) );
+                    }
 
-        		if ( (edata->a0_kappa != 0) && (edata->a0_kappa != 0) ) {
-        		    double kappa_vel_corr_factor;
-        		    kappa_vel_corr_factor = sqrt(1. - (edata->a0_kappa * edata->g0_kappa * edata->g0_kappa / (edata->g0_kappa * edata->g0_kappa + w * w) + edata->a1_kappa * edata->g1_kappa * edata->g1_kappa / (edata->g1_kappa * edata->g1_kappa + w * w)));
-                    edata->Vp = sqrt(kappa_vel_corr_factor * kappa_vel_corr_factor * vksquared + 4. / 3. * edata->Vs * edata->Vs);
-        		}
+                    if ( (edata->a0_kappa != 0) && (edata->a0_kappa != 0) ) {
+                        kappa_vel_corr_factor = sqrt(1. - (   edata->a0_kappa * edata->g0_kappa * edata->g0_kappa / (edata->g0_kappa * edata->g0_kappa + w2)
+                                                            + edata->a1_kappa * edata->g1_kappa * edata->g1_kappa / (edata->g1_kappa * edata->g1_kappa + w2) ) );
+                    }
+                } else if ( (Param.theTypeOfDamping == BKT3) || (Param.theTypeOfDamping == BKT3F) ) {
+                    /* PENDING */
+                } else {
+                    /* Should never reach this point */
+                    solver_abort( __FUNCTION_NAME, NULL, "Unexpected damping type: %d\n", Param.theTypeOfDamping);
+                }
+
+                edata->Vs = shear_vel_corr_factor * edata->Vs;
+                edata->Vp = sqrt(kappa_vel_corr_factor * kappa_vel_corr_factor * vksquared + 4. / 3. * edata->Vs * edata->Vs);
         	}
         }
     }
