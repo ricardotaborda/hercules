@@ -274,6 +274,8 @@ static struct Param_t {
     double   theQConstant;
     double   theQAlpha;
     double   theQBeta;
+    noyesflag_t  useBengalBasin;
+    FILE*    theBengalBasinFP;
 } Param = {
     .FourDOutFp = NULL,
     .theMonitorFileFp = NULL,
@@ -294,7 +296,8 @@ static struct Param_t {
     .the4DOutSize   = 0,
     .theMeshOutFlag = DO_OUTPUT,
     .useProfile = NO,
-    .theNumberOfLayers = 0
+    .theNumberOfLayers = 0,
+    .useBengalBasin = NO
 };
 
 /* These are all of the remaining global variables - this list should not grow */
@@ -381,7 +384,7 @@ monitor_print( const char* format, ... )
 static void read_parameters( int argc, char** argv ){
 
 #define LOCAL_INIT_DOUBLE_MESSAGE_LENGTH 21  /* Must adjust this if adding double params */
-#define LOCAL_INIT_INT_MESSAGE_LENGTH 22     /* Must adjust this if adding int params */
+#define LOCAL_INIT_INT_MESSAGE_LENGTH 23     /* Must adjust this if adding int params */
 
     double  double_message[LOCAL_INIT_DOUBLE_MESSAGE_LENGTH];
     int     int_message[LOCAL_INIT_INT_MESSAGE_LENGTH];
@@ -468,6 +471,7 @@ static void read_parameters( int argc, char** argv ){
     int_message[19] = Param.theStepMeshingFactor;
     int_message[20] = (int)Param.useProfile;
     int_message[21] = (int)Param.useParametricQ;
+    int_message[22] = (int)Param.useBengalBasin;
 
     MPI_Bcast(int_message, LOCAL_INIT_INT_MESSAGE_LENGTH, MPI_INT, 0, comm_solver);
 
@@ -493,6 +497,7 @@ static void read_parameters( int argc, char** argv ){
     Param.theStepMeshingFactor           = int_message[19];
     Param.useProfile                     = int_message[20];
     Param.useParametricQ                 = int_message[21];
+    Param.useBengalBasin                 = int_message[22];
 
     /*Broadcast all string params*/
     MPI_Bcast (Param.parameters_input_file,  256, MPI_CHAR, 0, comm_solver);
@@ -1040,6 +1045,11 @@ static int32_t parse_parameters( const char* numericalin )
         Param.useProfile = YES;
     }
 
+    /* Check whether using the bengal basin model and init global flag to YES */
+    if ( strcasecmp(Param.cvmdb_input_file, "bengal") == 0 ) {
+        Param.useBengalBasin = YES;
+    }
+
     /* Init the static global variables */
 
     Param.theRegionLat      = region_origin_latitude_deg;
@@ -1474,7 +1484,7 @@ setrec( octant_t* leaf, double ticksize, void* data )
     edata->edgesize = ticksize * halfticks * 2;
 
     /* Check for buildings and proceed according to the buildings setrec */
-    if ( (Param.includeBuildings == YES) && (Param.useProfile == NO) ) {
+    if ( (Param.includeBuildings == YES) && (Param.useProfile == NO) && (Param.useBengalBasin == NO) ) {
 		if ( bldgs_setrec( leaf, ticksize, edata, Global.theCVMEp,Global.theXForMeshOrigin,Global.theYForMeshOrigin,Global.theZForMeshOrigin ) ) {
             return;
         }
@@ -1504,8 +1514,10 @@ setrec( octant_t* leaf, double ticksize, void* data )
                     z_m -= get_surface_shift();
                 }
 
-                if (Param.useProfile == NO) {
+                if ( (Param.useProfile == NO) && (Param.useBengalBasin == NO) ) {
                     res = cvm_query( Global.theCVMEp, y_m, x_m, z_m, &g_props );
+                } else if (Param.useBengalBasin == YES) {
+                    res = bengal_cvm_query(Param.theBengalBasinFP, y_m, x_m, z_m, &g_props);
                 } else {
                     res = profile_query(z_m, &g_props);
                 }
@@ -7453,8 +7465,10 @@ mesh_correct_properties( etree_t* cvm )
         				//                        }
         			}
 
-                    if (Param.useProfile == NO) {
+                    if ( (Param.useProfile == NO) && (Param.useBengalBasin == NO) ) {
                         res = cvm_query( Global.theCVMEp, east_m, north_m, depth_m, &g_props );
+                    } else if ( Param.useBengalBasin == YES ) {
+                        res = bengal_cvm_query(Param.theBengalBasinFP, east_m, north_m, depth_m, &g_props);
                     } else {
                         res = profile_query(depth_m, &g_props);
                     }
@@ -7833,6 +7847,16 @@ int main( int argc, char** argv )
 
         /* Read profile to memory */
         load_profile( Param.parameters_input_file );
+
+    } else if ( Param.useBengalBasin == YES ) {
+
+        /* Opens the Bengal Basin surface file */
+        Param.theBengalBasinFP = fopen("inputfiles/bengalbasindepth.bin","rb");
+        if ( Param.theBengalBasinFP == NULL ) {
+            fprintf( stderr, "Unable to open Bengal Basin file!\n");
+            MPI_Abort(MPI_COMM_WORLD, ERROR );
+            exit( 1 );
+        }
 
     } else {
 
