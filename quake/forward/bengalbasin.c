@@ -6,24 +6,28 @@
 
 #include "bengalbasin.h"
 
-theprops_t* getmantlevalues(double depth_m, double mindepth);
-theprops_t* getcrustvalues(double depth_m, double mindepth);
-theprops_t* getbasinvalues(double depth_m, double maxdepth);
+cvmpayload_t getmantlevalues(double depth_m, double mindepth);
+cvmpayload_t getcrustvalues(double depth_m, double mindepth);
+cvmpayload_t getbasinvalues(double depth_m, double maxdepth);
 
-int bengal_cvm_query(FILE *fp, double east_m, double north_m, double depth_m, theprops_t* result)
+int bengal_cvm_query(FILE *fp, double east_m, double north_m, double depth_m, cvmpayload_t* result)
 {
+    cvmpayload_t temp_result;
 
 	double minlat= 19.9;
 	double maxlat= 27;
 	double minlong= 86.5;
 	double maxlong= 93.4;
+
 	double value;
 	double val1;
 	double val2;
 	double val3;
 	double val4;
+
 	double dlat = (maxlat-minlat)/2000;
 	double dlong = (maxlong-minlong)/2000;
+
 	long byteval1;
 	long byteval2;
 	long byteval3;
@@ -109,25 +113,28 @@ int bengal_cvm_query(FILE *fp, double east_m, double north_m, double depth_m, th
 
 	if ( depth_m > ( (value* - 1) + 20000) ) {
 
-		result = getmantlevalues(depth_m, value);
+	    temp_result = getmantlevalues(depth_m, value);
 
 	} else if ( (depth_m > (value*-1)) && (depth_m <= ((value*-1)+20000)) ) {
 
-	    result = getcrustvalues(depth_m, value);
+	    temp_result = getcrustvalues(depth_m, value);
 
 	} else {
 
-	    //result = getbasinvalues(depth_m, value);
-		result = getbasinvalues(depth_m, value);
+	    temp_result = getbasinvalues(depth_m, value);
 
 	}
+
+    result->Vp  = temp_result.Vp;
+    result->Vs  = temp_result.Vs;
+    result->rho = temp_result.rho;
 
 	return 0;
 }
 
-theprops_t* getbasinvalues(double depth_m, double maxdepth){
+cvmpayload_t getbasinvalues(double depth_m, double maxdepth){
 
-    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));
+    cvmpayload_t result;
 
     double minvs = 500;
     double maxvs = 2000;
@@ -150,16 +157,16 @@ theprops_t* getbasinvalues(double depth_m, double maxdepth){
 		density = (float)( mindensity + ( (maxdensity - mindensity)*(depth_m - mindepth) )/(maxdepth - mindepth) );
 	}
 
-	result->Vs = vs;
-	result->Vp = vp;
-	result->rho = density;
+	result.Vs = vs;
+	result.Vp = vp;
+	result.rho = density;
 
 	return result;
 }
 
-theprops_t* getcrustvalues(double depth_m, double mindepth){
+cvmpayload_t getcrustvalues(double depth_m, double mindepth){
 
-    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));
+    cvmpayload_t result;
 
     double minvs = 2700;
     double maxvs = 4200;
@@ -177,16 +184,16 @@ theprops_t* getcrustvalues(double depth_m, double mindepth){
 	vp = 1.8*vs;
 	density = (float)(mindensity+((maxdensity-mindensity)*(depth_m-mindepth))/(maxdepth-mindepth));
 
-    result->Vs = vs;
-    result->Vp = vp;
-    result->rho = density;
+    result.Vs = vs;
+    result.Vp = vp;
+    result.rho = density;
 
     return result;
 }
 
-theprops_t* getmantlevalues(double depth_m, double mindepth){
+cvmpayload_t getmantlevalues(double depth_m, double mindepth){
 
-    theprops_t* result = (theprops_t *)calloc(1, sizeof(theprops_t));
+    cvmpayload_t result;
 
     double minvs = 4500;
     double maxvs = 6000;
@@ -202,9 +209,9 @@ theprops_t* getmantlevalues(double depth_m, double mindepth){
 	vp = 1.8*vs;
 	density = 3300;
 
-    result->Vs = vs;
-    result->Vp = vp;
-    result->rho = density;
+    result.Vs = vs;
+    result.Vp = vp;
+    result.rho = density;
 
     return result;
 }
