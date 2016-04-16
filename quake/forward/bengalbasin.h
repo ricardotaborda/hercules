@@ -8,10 +8,8 @@
 #ifndef BENGALBASIN_H_
 #define BENGALBASIN_H_
 
-typedef struct theprops_t {
-    float Vp, Vs, rho;
-} theprops_t;
+#include "cvm.h"
 
-int bengal_cvm_query(FILE *fp, double east_m, double north_m, double depth_m, theprops_t* result);
+int bengal_cvm_query(FILE *fp, double east_m, double north_m, double depth_m, cvmpayload_t* result);
 
 #endif /* BENGALBASIN_H_ */
