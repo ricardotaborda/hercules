@@ -7591,38 +7591,121 @@ mesh_correct_properties( etree_t* cvm )
 
         	} else if ( Param.theTypeOfDamping == BKT2 ) {
 
+        		/* Notes:
+        		 * g = normilized_gamma * ( 2 * pi * f_max);
+        		 * b = normilized_beta / (Q * 2 * pi * f_max);
+        		 */
         	    if ( Qs >= 1000 ) {
-                    edata->a0_shear = 0;
-                    edata->a1_shear = 0;
                     edata->g0_shear = 0;
                     edata->g1_shear = 0;
+                    edata->a0_shear = 0;
+                    edata->a1_shear = 0;
                     edata->b_shear  = 0;
         	    } else {
-                    edata->a0_shear = (-2.656 * pow(Qs, -0.879) + 1.677) / Qs;
-                    edata->a1_shear = (-0.562 * pow(Qs, -1.030) + 1.262) / Qs;
-                    edata->g0_shear = 0.0373 * (2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
-                    edata->g1_shear = 0.3082 * (2. * M_PI * Param.theFreq); // g1_shear = normilized_gamma * ( 2 * pi * fmax);
-                    edata->b_shear  = (0.188 * pow(Qs, -0.920) + 0.614) / (Qs * (2. * M_PI * Param.theFreq)); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
+                    edata->g0_shear =   0.0373 * (2. * M_PI * Param.theFreq);
+                    edata->g1_shear =   0.3082 * (2. * M_PI * Param.theFreq);
+                    edata->a0_shear = (-2.656  * pow(Qs, -0.8788) + 1.677 ) / Qs;
+                    edata->a1_shear = (-0.5623 * pow(Qs, -1.0300) + 1.262 ) / Qs;
+                    edata->b_shear  = ( 0.1876 * pow(Qs, -0.9196) + 0.6137) / (Qs * (2. * M_PI * Param.theFreq));
         	    }
 
         	    if ( ( Param.useInfQk == YES ) || ( Qk >= 1000 ) ) {
-                    edata->a0_kappa = 0;
-                    edata->a1_kappa = 0;
                     edata->g0_kappa = 0;
                     edata->g1_kappa = 0;
+                    edata->a0_kappa = 0;
+                    edata->a1_kappa = 0;
                     edata->b_kappa  = 0;
         	    } else {
-                    edata->a0_kappa = (-2.656 * pow(Qs, -0.879) + 1.677) / Qs;
-                    edata->a1_kappa = (-0.562 * pow(Qs, -1.030) + 1.262) / Qs;
-                    edata->g0_kappa = 0.0373 * (2. * M_PI * Param.theFreq); // g0_shear = normilized_gamma * ( 2 * pi * fmax);
-                    edata->g1_kappa = 0.3082 * (2. * M_PI * Param.theFreq); // g1_shear = normilized_gamma * ( 2 * pi * fmax);
-                    edata->b_kappa  = (0.188 * pow(Qs, -0.920) + 0.614) / (Qs * (2. * M_PI * Param.theFreq)); // b_shear = normilized_beta /(Q * 2 * pi *fmax);
+                    edata->g0_kappa =   0.0373 * (2. * M_PI * Param.theFreq);
+                    edata->g1_kappa =   0.3082 * (2. * M_PI * Param.theFreq);
+                    edata->a0_kappa = (-2.656  * pow(Qk, -0.8788) + 1.677 ) / Qk;
+                    edata->a1_kappa = (-0.5623 * pow(Qk, -1.0300) + 1.262 ) / Qk;
+                    edata->b_kappa  = ( 0.1876 * pow(Qk, -0.9196) + 0.6137) / (Qk * (2. * M_PI * Param.theFreq));
         	    }
 
         	} else if ( Param.theTypeOfDamping == BKT3 ) {
-                /* PENDING */
+
+        	    if ( Qs >= 1000 ) {
+                    edata->g0_shear = 0;
+                    edata->g1_shear = 0;
+                    edata->g2_shear = 0;
+                    edata->a0_shear = 0;
+                    edata->a1_shear = 0;
+                    edata->a2_shear = 0;
+                    edata->b_shear  = 0;
+        	    } else {
+                    edata->g0_shear =   0.0151 * (2. * M_PI * Param.theFreq);
+                    edata->g1_shear =   0.1000 * (2. * M_PI * Param.theFreq);
+                    edata->g2_shear =   0.4814 * (2. * M_PI * Param.theFreq);
+                    edata->a0_shear = (-2.723  * pow(Qs, -0.8206) + 1.601 ) / Qs;
+                    edata->a1_shear = (-1.439  * pow(Qs, -0.9668) + 1.04  ) / Qs;
+                    edata->a2_shear = (-0.3037 * pow(Qs, -0.8911) + 1.032 ) / Qs;
+                    edata->b_shear  = ( 0.1249 * pow(Qs, -0.804 ) + 0.4782) / (Qs * (2. * M_PI * Param.theFreq));
+        	    }
+
+        	    if ( ( Param.useInfQk == YES ) || ( Qk >= 1000 ) ) {
+                    edata->g0_kappa = 0;
+                    edata->g1_kappa = 0;
+                    edata->g2_kappa = 0;
+                    edata->a0_kappa = 0;
+                    edata->a1_kappa = 0;
+                    edata->a2_kappa = 0;
+                    edata->b_kappa  = 0;
+        	    } else {
+                    edata->g0_kappa =   0.0151 * (2. * M_PI * Param.theFreq);
+                    edata->g1_kappa =   0.1000 * (2. * M_PI * Param.theFreq);
+                    edata->g2_kappa =   0.4814 * (2. * M_PI * Param.theFreq);
+                    edata->a0_kappa = (-2.723  * pow(Qk, -0.8206) + 1.601 ) / Qk;
+                    edata->a1_kappa = (-1.439  * pow(Qk, -0.9668) + 1.04  ) / Qk;
+                    edata->a2_kappa = (-0.3037 * pow(Qk, -0.8911) + 1.032 ) / Qk;
+                    edata->b_kappa  = ( 0.1249 * pow(Qk, -0.804 ) + 0.4782) / (Qk * (2. * M_PI * Param.theFreq));
+        	    }
+
         	} else if ( Param.theTypeOfDamping == BKT3F ) {
-                /* PENDING */
+
+        		/*
+        		 * Temporal Implementation of frequency dependent Q with:
+        		 * exponent = 0.8
+        		 * f_max = 10 Hz (fixed)
+        		 * f_o = 0.1 f_max = 1 Hz (fixed)
+        		 */
+
+        	    if ( Qs >= 1000 ) {
+                    edata->g0_shear = 0;
+                    edata->g1_shear = 0;
+                    edata->g2_shear = 0;
+                    edata->a0_shear = 0;
+                    edata->a1_shear = 0;
+                    edata->a2_shear = 0;
+                    edata->b_shear  = 0;
+        	    } else {
+                    edata->g0_shear =   0.002  * (2. * M_PI * 10);
+                    edata->g1_shear =   0.0116 * (2. * M_PI * 10);
+                    edata->g2_shear =   0.0798 * (2. * M_PI * 10);
+                    edata->a0_shear = (-2.809  * pow(Qs, -0.7919) + 1.512 ) / Qs;
+                    edata->a1_shear = (-1.748  * pow(Qs, -0.882 ) + 1.064 ) / Qs;
+                    edata->a2_shear = (-2.358  * pow(Qs, -1.725 ) + 1.581 ) / Qs;
+                    edata->b_shear  = ( 0.09232* pow(Qs, -0.8876) + 0.006941) / (Qs * (2. * M_PI * 10));
+        	    }
+
+        	    if ( ( Param.useInfQk == YES ) || ( Qk >= 1000 ) ) {
+                    edata->g0_kappa = 0;
+                    edata->g1_kappa = 0;
+                    edata->g2_kappa = 0;
+                    edata->a0_kappa = 0;
+                    edata->a1_kappa = 0;
+                    edata->a2_kappa = 0;
+                    edata->b_kappa  = 0;
+        	    } else {
+                    edata->g0_kappa =   0.002  * (2. * M_PI * 10);
+                    edata->g1_kappa =   0.0116 * (2. * M_PI * 10);
+                    edata->g2_kappa =   0.0798 * (2. * M_PI * 10);
+                    edata->a0_kappa = (-2.809  * pow(Qk, -0.7919) + 1.512 ) / Qk;
+                    edata->a1_kappa = (-1.748  * pow(Qk, -0.882 ) + 1.064 ) / Qk;
+                    edata->a2_kappa = (-2.358  * pow(Qk, -1.725 ) + 1.581 ) / Qk;
+                    edata->b_kappa  = ( 0.09232* pow(Qk, -0.8876) + 0.006941) / (Qk * (2. * M_PI * 10));
+        	    }
+
         	} else {
                 /* Should never reach this point */
                 solver_abort( __FUNCTION_NAME, NULL, "Unexpected damping type: %d\n", Param.theTypeOfDamping);
@@ -7644,13 +7727,21 @@ mesh_correct_properties( etree_t* cvm )
                         shear_vel_corr_factor = sqrt(1. - (   edata->a0_shear * edata->g0_shear * edata->g0_shear / (edata->g0_shear * edata->g0_shear + w2)
                                                             + edata->a1_shear * edata->g1_shear * edata->g1_shear / (edata->g1_shear * edata->g1_shear + w2) ) );
                     }
-
-                    if ( (edata->a0_kappa != 0) && (edata->a0_kappa != 0) ) {
+                    if ( (edata->a0_kappa != 0) && (edata->a1_kappa != 0) ) {
                         kappa_vel_corr_factor = sqrt(1. - (   edata->a0_kappa * edata->g0_kappa * edata->g0_kappa / (edata->g0_kappa * edata->g0_kappa + w2)
                                                             + edata->a1_kappa * edata->g1_kappa * edata->g1_kappa / (edata->g1_kappa * edata->g1_kappa + w2) ) );
                     }
                 } else if ( (Param.theTypeOfDamping == BKT3) || (Param.theTypeOfDamping == BKT3F) ) {
-                    /* PENDING */
+                    if ( (edata->a0_shear != 0) && (edata->a1_shear != 0) && (edata->a2_shear != 0) ) {
+                        shear_vel_corr_factor = sqrt(1. - (   edata->a0_shear * edata->g0_shear * edata->g0_shear / (edata->g0_shear * edata->g0_shear + w2)
+                                                            + edata->a1_shear * edata->g1_shear * edata->g1_shear / (edata->g1_shear * edata->g1_shear + w2)
+                                                            + edata->a2_shear * edata->g2_shear * edata->g2_shear / (edata->g2_shear * edata->g2_shear + w2) ) );
+                    }
+                    if ( (edata->a0_kappa != 0) && (edata->a1_kappa != 0) && (edata->a2_kappa != 0) ) {
+                        kappa_vel_corr_factor = sqrt(1. - (   edata->a0_kappa * edata->g0_kappa * edata->g0_kappa / (edata->g0_kappa * edata->g0_kappa + w2)
+                                                            + edata->a1_kappa * edata->g1_kappa * edata->g1_kappa / (edata->g1_kappa * edata->g1_kappa + w2)
+                                                            + edata->a2_kappa * edata->g2_kappa * edata->g2_kappa / (edata->g2_kappa * edata->g2_kappa + w2) ) );
+                    }
                 } else {
                     /* Should never reach this point */
                     solver_abort( __FUNCTION_NAME, NULL, "Unexpected damping type: %d\n", Param.theTypeOfDamping);

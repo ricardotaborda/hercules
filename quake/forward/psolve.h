@@ -93,10 +93,13 @@ typedef struct mdata_t mdata_t;
  * Mesh element data fields
  */
 typedef struct edata_t {
-    float edgesize, Vp, Vs, rho, a0_shear, a1_shear, b_shear, g0_shear, g1_shear, a0_kappa, a1_kappa, b_kappa, g0_kappa, g1_kappa;
+    float edgesize, Vp, Vs, rho,
+		  a0_shear, a1_shear, a2_shear,
+		  a0_kappa, a1_kappa, a2_kappa,
+		  g0_shear, g1_shear, g2_shear,
+		  g0_kappa, g1_kappa, g2_kappa,
+		  b_shear, b_kappa;
 } edata_t;
-
-
 
 /** 3-ary double vector */
 struct fvector_t {
