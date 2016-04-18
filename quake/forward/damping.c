@@ -107,7 +107,7 @@ void damping_addforce(mesh_t *myMesh, mysolver_t *mySolver, fmatrix_t (*theK1)[8
  *              damping.
  */
 
-void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theDeltaT, double theDeltaTSquared){
+void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theDeltaT, double theDeltaTSquared, damping_type_t typeOfDamping){
 
     int32_t eindex;
     int i;
@@ -227,7 +227,7 @@ void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theD
  * new_damping: Compute and add the force due to the element
  *              damping.
  */
-void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theDeltaT, double theDeltaTSquared)
+void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theDeltaT, double theDeltaTSquared, damping_type_t typeOfDamping)
 {
 	/* \todo use mu_and_lamda to compute first,second and third coefficients */
 
@@ -248,7 +248,10 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
 		e_t    *ep;
 		edata_t *edata;
 
-		double a0_shear, a1_shear, b_shear, a0_kappa, a1_kappa, b_kappa, csum;
+		double a0_shear, a1_shear, a2_shear,
+		       a0_kappa, a1_kappa, a2_kappa,
+		       b_shear, b_kappa,
+		       csum;
 
 		elemp = &myMesh->elemTable[eindex];
 		edata = (edata_t *)elemp->data;
@@ -258,14 +261,17 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
 
         a0_shear = edata->a0_shear;
         a1_shear = edata->a1_shear;
+        a2_shear = edata->a2_shear;
         b_shear  = edata->b_shear;
 
         csum = a0_shear + a1_shear + b_shear;
+        if ( typeOfDamping >= BKT3 ) {
+            csum += a2_shear;
+        }
 
 		if ( csum != 0 ) {
 
 	        double coef_shear = b_shear / rmax;
-
 
             for (i = 0; i < 8; i++) {
 
@@ -292,6 +298,12 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
                                              - (a0_shear * f0_tm1->f[2] + a1_shear * f1_tm1->f[2])
                                              + tm1Disp->f[2];
 
+                if ( typeOfDamping >= BKT3 ) {
+                    damping_vector_shear[i].f[0] -= a2_shear * f0_tm1->f[0];
+                    damping_vector_shear[i].f[1] -= a2_shear * f0_tm1->f[1];
+                    damping_vector_shear[i].f[2] -= a2_shear * f0_tm1->f[2];
+                }
+
             } // end for nodes in the element
 
 		} else {
@@ -317,14 +329,17 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
 
         a0_kappa   = edata->a0_kappa;
         a1_kappa   = edata->a1_kappa;
+        a2_kappa   = edata->a2_kappa;
         b_kappa    = edata->b_kappa;
 
         csum = a0_kappa + a1_kappa + b_kappa;
+        if ( typeOfDamping >= BKT3 ) {
+            csum += a2_kappa;
+        }
 
         if ( csum != 0 ) {
 
             double coef_kappa = b_kappa / rmax;
-
 
             for (i = 0; i < 8; i++) {
 
@@ -352,6 +367,12 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
                 damping_vector_kappa[i].f[2] = coef_kappa * (tm1Disp->f[2] - tm2Disp->f[2])
                                              - (a0_kappa * f0_tm1->f[2] + a1_kappa * f1_tm1->f[2])
                                              + tm1Disp->f[2];
+
+                if ( typeOfDamping >= BKT3 ) {
+                    damping_vector_kappa[i].f[0] -= a2_kappa * f0_tm1->f[0];
+                    damping_vector_kappa[i].f[1] -= a2_kappa * f0_tm1->f[1];
+                    damping_vector_kappa[i].f[2] -= a2_kappa * f0_tm1->f[2];
+                }
 
             } // end for nodes in the element
 
