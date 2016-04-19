@@ -111,9 +111,13 @@ void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theD
 
     int32_t eindex;
     int i;
-    //double rmax = 2. * M_PI * theFreq * theDeltaT;
-      double rmax = theDeltaT;
+    double rmax;
 
+    if (typeOfDamping == BKT) {
+        double rmax = 2. * M_PI * theFreq * theDeltaT;
+    }
+
+    double rmax = theDeltaT;
 
     for (eindex = 0; eindex < myMesh->lenum; eindex++)
     {
@@ -236,8 +240,11 @@ void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, d
 	int32_t   eindex;
 	fvector_t damping_vector_shear[8], damping_vector_kappa[8];
 
-	//double rmax = 2. * M_PI * theFreq * theDeltaT;
-	double rmax = theDeltaT;
+    if (typeOfDamping == BKT) {
+        double rmax = 2. * M_PI * theFreq * theDeltaT;
+    }
+
+    double rmax = theDeltaT;
 
 	/* theAddForceETime -= MPI_Wtime(); */
 
