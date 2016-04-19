@@ -111,12 +111,12 @@ void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theD
 
     int32_t eindex;
     int i;
-    double rmax;
+    double cdt;
 
     if (typeOfDamping == BKT) {
-        rmax = 2. * M_PI * theFreq * theDeltaT;
+        cdt = 2. * M_PI * theFreq * theDeltaT;
     } else {
-    	rmax = theDeltaT;
+    	cdt = theDeltaT;
     }
     
     for (eindex = 0; eindex < myMesh->lenum; eindex++)
@@ -127,24 +127,30 @@ void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theD
     	elemp = &myMesh->elemTable[eindex];
     	edata = (edata_t *)elemp->data;
 
+        double g0, g02, cg0, eg0;
+        double g1, g12, cg1, eg1;
+        double g2, g22, cg2, eg2;
+
         // SHEAR RELATED CONVOLUTION
 
     	if ( (edata->g0_shear != 0) && (edata->g1_shear != 0) ) {
 
-            double c0_shear = edata->g0_shear;
-            double c1_shear = edata->g1_shear;
+            g0  = cdt * edata->g0_shear;
+            g02 = g0 / 2.;
+            cg0 = g02 * ( 1. - g0 );
+            eg0 = exp( -g0 );
 
-            double g0_shear = c0_shear * rmax;
-            double g1_shear = c1_shear * rmax;
+            g1  = cdt * edata->g1_shear;
+            g12 = g1 / 2.;
+            cg1 = g12 * ( 1. - g1 );
+            eg1 = exp( -g1 );
 
-            double coef_shear_1 = g0_shear / 2.;
-            double coef_shear_2 = coef_shear_1 * ( 1. - g0_shear );
-
-            double coef_shear_3 = g1_shear / 2.;
-            double coef_shear_4 = coef_shear_3 * ( 1. - g1_shear );
-
-            double exp_coef_shear_0 = exp( -g0_shear );
-            double exp_coef_shear_1 = exp( -g1_shear );
+            if (typeOfDamping >= BKT3) {
+                g2  = cdt * edata->g2_shear;
+                g22 = g2 / 2.;
+                cg2 = g22 * ( 1. - g2 );
+                eg2 = exp( -g2 );
+            }
 
             for(i = 0; i < 8; i++)
             {
@@ -162,13 +168,13 @@ void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theD
                 f0_tm1 = mySolver->conv_shear_1 + cindex;
                 f1_tm1 = mySolver->conv_shear_2 + cindex;
 
-                f0_tm1->f[0] = coef_shear_2 * tm1Disp->f[0] + coef_shear_1 * tm2Disp->f[0] + exp_coef_shear_0 * f0_tm1->f[0];
-                f0_tm1->f[1] = coef_shear_2 * tm1Disp->f[1] + coef_shear_1 * tm2Disp->f[1] + exp_coef_shear_0 * f0_tm1->f[1];
-                f0_tm1->f[2] = coef_shear_2 * tm1Disp->f[2] + coef_shear_1 * tm2Disp->f[2] + exp_coef_shear_0 * f0_tm1->f[2];
+                f0_tm1->f[0] = cg0 * tm1Disp->f[0] + g02 * tm2Disp->f[0] + eg0 * f0_tm1->f[0];
+                f0_tm1->f[1] = cg0 * tm1Disp->f[1] + g02 * tm2Disp->f[1] + eg0 * f0_tm1->f[1];
+                f0_tm1->f[2] = cg0 * tm1Disp->f[2] + g02 * tm2Disp->f[2] + eg0 * f0_tm1->f[2];
 
-                f1_tm1->f[0] = coef_shear_4 * tm1Disp->f[0] + coef_shear_3 * tm2Disp->f[0] + exp_coef_shear_1 * f1_tm1->f[0];
-                f1_tm1->f[1] = coef_shear_4 * tm1Disp->f[1] + coef_shear_3 * tm2Disp->f[1] + exp_coef_shear_1 * f1_tm1->f[1];
-                f1_tm1->f[2] = coef_shear_4 * tm1Disp->f[2] + coef_shear_3 * tm2Disp->f[2] + exp_coef_shear_1 * f1_tm1->f[2];
+                f1_tm1->f[0] = cg1 * tm1Disp->f[0] + g12 * tm2Disp->f[0] + eg1 * f1_tm1->f[0];
+                f1_tm1->f[1] = cg1 * tm1Disp->f[1] + g12 * tm2Disp->f[1] + eg1 * f1_tm1->f[1];
+                f1_tm1->f[2] = cg1 * tm1Disp->f[2] + g12 * tm2Disp->f[2] + eg1 * f1_tm1->f[2];
 
             } // For local nodes (0:7)
 
@@ -178,20 +184,22 @@ void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theD
 
         if ( (edata->g0_kappa != 0) && (edata->g1_kappa != 0) ) {
 
-            double c0_kappa = edata->g0_kappa;
-            double c1_kappa = edata->g1_kappa;
+            g0  = cdt * edata->g0_kappa;
+            g02 = g0 / 2.;
+            cg0 = g02 * ( 1. - g0 );
+            eg0 = exp( -g0 );
 
-            double g0_kappa = c0_kappa * rmax;
-            double g1_kappa = c1_kappa * rmax;
+            g1  = cdt * edata->g1_kappa;
+            g12 = g1 / 2.;
+            cg1 = g12 * ( 1. - g1 );
+            eg1 = exp( -g1 );
 
-            double coef_kappa_1 = g0_kappa / 2.;
-            double coef_kappa_2 = coef_kappa_1 * ( 1. - g0_kappa );
-
-            double coef_kappa_3 = g1_kappa / 2.;
-            double coef_kappa_4 = coef_kappa_3 * ( 1. - g1_kappa );
-
-            double exp_coef_kappa_0 = exp( -g0_kappa );
-            double exp_coef_kappa_1 = exp( -g1_kappa );
+            if (typeOfDamping >= BKT3) {
+                g2  = cdt * edata->g2_kappa;
+                g22 = g2 / 2.;
+                cg2 = g22 * ( 1. - g2 );
+                eg2 = exp( -g2 );
+            }
 
             for(i = 0; i < 8; i++)
             {
@@ -209,13 +217,13 @@ void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theD
                 f0_tm1 = mySolver->conv_kappa_1 + cindex;
                 f1_tm1 = mySolver->conv_kappa_2 + cindex;
 
-                f0_tm1->f[0] = coef_kappa_2 * tm1Disp->f[0] + coef_kappa_1 * tm2Disp->f[0] + exp_coef_kappa_0 * f0_tm1->f[0];
-                f0_tm1->f[1] = coef_kappa_2 * tm1Disp->f[1] + coef_kappa_1 * tm2Disp->f[1] + exp_coef_kappa_0 * f0_tm1->f[1];
-                f0_tm1->f[2] = coef_kappa_2 * tm1Disp->f[2] + coef_kappa_1 * tm2Disp->f[2] + exp_coef_kappa_0 * f0_tm1->f[2];
+                f0_tm1->f[0] = cg0 * tm1Disp->f[0] + g02 * tm2Disp->f[0] + eg0 * f0_tm1->f[0];
+                f0_tm1->f[1] = cg0 * tm1Disp->f[1] + g02 * tm2Disp->f[1] + eg0 * f0_tm1->f[1];
+                f0_tm1->f[2] = cg0 * tm1Disp->f[2] + g02 * tm2Disp->f[2] + eg0 * f0_tm1->f[2];
 
-                f1_tm1->f[0] = coef_kappa_4 * tm1Disp->f[0] + coef_kappa_3 * tm2Disp->f[0] + exp_coef_kappa_1 * f1_tm1->f[0];
-                f1_tm1->f[1] = coef_kappa_4 * tm1Disp->f[1] + coef_kappa_3 * tm2Disp->f[1] + exp_coef_kappa_1 * f1_tm1->f[1];
-                f1_tm1->f[2] = coef_kappa_4 * tm1Disp->f[2] + coef_kappa_3 * tm2Disp->f[2] + exp_coef_kappa_1 * f1_tm1->f[2];
+                f1_tm1->f[0] = cg1 * tm1Disp->f[0] + g12 * tm2Disp->f[0] + eg1 * f1_tm1->f[0];
+                f1_tm1->f[1] = cg1 * tm1Disp->f[1] + g12 * tm2Disp->f[1] + eg1 * f1_tm1->f[1];
+                f1_tm1->f[2] = cg1 * tm1Disp->f[2] + g12 * tm2Disp->f[2] + eg1 * f1_tm1->f[2];
 
             } // For local nodes (0:7)
 
