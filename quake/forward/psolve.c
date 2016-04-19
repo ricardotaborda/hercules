@@ -3475,10 +3475,18 @@ static void solver_init()
     Global.mySolver->tm1    = (fvector_t *)calloc(Global.myMesh->nharbored, sizeof(fvector_t));
     Global.mySolver->tm2    = (fvector_t *)calloc(Global.myMesh->nharbored, sizeof(fvector_t));
     Global.mySolver->force  = (fvector_t *)calloc(Global.myMesh->nharbored, sizeof(fvector_t));
-    Global.mySolver->conv_shear_1 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
-    Global.mySolver->conv_shear_2 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
-    Global.mySolver->conv_kappa_1 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
-    Global.mySolver->conv_kappa_2 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
+
+    if (Param.theTypeOfDamping >= BKT) {
+    	Global.mySolver->conv_shear_1 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
+    	Global.mySolver->conv_shear_2 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
+    	Global.mySolver->conv_kappa_1 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
+    	Global.mySolver->conv_kappa_2 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
+    }
+
+    if (Param.theTypeOfDamping >= BKT3) {
+        Global.mySolver->conv_shear_3 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
+        Global.mySolver->conv_kappa_3 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
+    }
 
     Global.mySolver->dn_sched = schedule_new();
     Global.mySolver->an_sched = schedule_new();
