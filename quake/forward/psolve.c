@@ -17,7 +17,6 @@
  *  @copyright_notice_end
  */
 
-
 /*
  * Generate an unstructured mesh and solve the linear system thereof
  * derived.
@@ -87,18 +86,23 @@ MPI_Comm comm_IO;
 #define LINESIZE	512
 #define FILEBUFSIZE     (1 << 25)
 
-
 #define CONTRIBUTION    901  /**< Harboring processors to owner processors */
 #define SHARING		902  /**< Owner processors to harboring processors */
 
 #define DISTRIBUTION    903  /**< Dangling nodes to anchored nodes */
 #define ASSIGNMENT      904  /**< Anchored nodes to dangling nodes */
 
-
 /*---------------Initialization and cleanup routines----------------------*/
 static void    read_parameters(int argc, char **argv);
 static int32_t parse_parameters(const char *numericalin);
 static void    local_finalize(void);
+
+/** Moved by Shima **************************************************/
+/** cvmrecord_t: cvm record.  Onlye used if USECVMDB not defined **/
+typedef struct cvmrecord_t {
+    char key[12];
+    float Vp, Vs, density;
+} cvmrecord_t;
 
 /*---------------- Mesh generation data structures -----------------------*/
 #ifdef USECVMDB
@@ -117,11 +121,6 @@ static int32_t zsearch(void *base, int32_t count, int32_t recordsize,
 static cvmrecord_t *sliceCVM(const char *cvm_flatfile);
 
 #endif
-/** cvmrecord_t: cvm record.  Onlye used if USECVMDB not defined **/
-typedef struct cvmrecord_t {
-    char key[12];
-    float Vp, Vs, density;
-} cvmrecord_t;
 
 /**
  * mrecord_t: Complete mesh database record
@@ -229,6 +228,7 @@ static struct Param_t {
     noyesflag_t  printK;
     noyesflag_t  printStationAccelerations;
     noyesflag_t  includeBuildings;
+    noyesflag_t  useParametricQ;
     noyesflag_t  includeNonlinearAnalysis;
     noyesflag_t  useInfQk;
     int  theTimingBarriersFlag;
@@ -264,7 +264,17 @@ static struct Param_t {
     noyesflag_t  drmImplement;
     drm_part_t   theDrmPart;
 	noyesflag_t  softerSoil;
-
+    noyesflag_t  useProfile;
+    int32_t      theNumberOfLayers;
+    double*  theProfileZ;
+    double*  theProfileVp;
+    double*  theProfileVs;
+    double*  theProfileRho;
+    double*  theProfileQp;
+    double*  theProfileQs;
+    double   theQConstant;
+    double   theQAlpha;
+    double   theQBeta;	
 } Param = {
     .FourDOutFp = NULL,
     .theMonitorFileFp = NULL,
@@ -283,7 +293,9 @@ static struct Param_t {
     .theUseCheckPoint =0,
     .theTimingBarriersFlag = 0,
     .the4DOutSize   = 0,
-    .theMeshOutFlag = DO_OUTPUT
+    .theMeshOutFlag = DO_OUTPUT,
+    .useProfile = NO,
+    .theNumberOfLayers = 0
 };
 
 /* These are all of the remaining global variables - this list should not grow */
@@ -370,7 +382,7 @@ monitor_print( const char* format, ... )
 static void read_parameters( int argc, char** argv ){
 
 #define LOCAL_INIT_DOUBLE_MESSAGE_LENGTH 18  /* Must adjust this if adding double params */
-#define LOCAL_INIT_INT_MESSAGE_LENGTH 21     /* Must adjust this if adding int params */
+#define LOCAL_INIT_INT_MESSAGE_LENGTH 22     /* Must adjust this if adding int params */
 
     double  double_message[LOCAL_INIT_DOUBLE_MESSAGE_LENGTH];
     int     int_message[LOCAL_INIT_INT_MESSAGE_LENGTH];
@@ -405,8 +417,11 @@ static void read_parameters( int argc, char** argv ){
     double_message[15] = Param.theRegionLat;
     double_message[16] = Param.theRegionLong;
     double_message[17] = Param.theRegionDepth;
-
-
+//     double_message[18] = Param.theQConstant;
+//     double_message[19] = Param.theQAlpha;
+//     double_message[20] = Param.theQBeta;
+    
+    
     MPI_Bcast(double_message, LOCAL_INIT_DOUBLE_MESSAGE_LENGTH, MPI_DOUBLE, 0, comm_solver);
 
     Param.theVsCut            = double_message[0];
@@ -427,6 +442,9 @@ static void read_parameters( int argc, char** argv ){
     Param.theRegionLat		= double_message[15];
     Param.theRegionLong		= double_message[16];
     Param.theRegionDepth    = double_message[17];
+
+
+
 
     /*Broadcast all integer params*/
     int_message[0]  = Param.theTotalSteps;
@@ -450,8 +468,8 @@ static void read_parameters( int argc, char** argv ){
     int_message[18] = (int)Param.useInfQk;
     int_message[19] = Param.theStepMeshingFactor;
 	int_message[20] = (int)Param.softerSoil;
-
-
+    int_message[21] = (int)Param.useProfile;
+//     int_message[22] = (int)Param.useParametricQ;
 
     MPI_Bcast(int_message, LOCAL_INIT_INT_MESSAGE_LENGTH, MPI_INT, 0, comm_solver);
 
@@ -476,7 +494,8 @@ static void read_parameters( int argc, char** argv ){
     Param.useInfQk                       = int_message[18];
     Param.theStepMeshingFactor           = int_message[19];
 	Param.softerSoil					 = int_message[20];
-
+	Param.useProfile					 = int_message[21];
+//     Param.useParametricQ                 = int_message[22];
 
     /*Broadcast all string params*/
     MPI_Bcast (Param.parameters_input_file,  256, MPI_CHAR, 0, comm_solver);
@@ -488,9 +507,6 @@ static void read_parameters( int argc, char** argv ){
 
     return;
 }
-
-
-
 static void
 local_finalize()
 {
@@ -666,10 +682,12 @@ static int32_t parse_parameters( const char* numericalin )
               region_length_north_m, region_depth_deep_m,
               startT, endT, deltaT, softening_factor,
               threshold_damping, threshold_VpVs, freq_vel;
+              
     char      type_of_damping[64],
 	      	  checkpoint_path[256],
               include_buildings[64],
               include_nonlinear_analysis[64],
+              			  use_parametricq[64],
               stiffness_calculation_method[64],
               print_matrix_k[64],
               print_station_velocities[64],
@@ -678,10 +696,10 @@ static int32_t parse_parameters( const char* numericalin )
     		  implement_drm[64],
     		  use_infinite_qk[64],
     		  soil_softening[64];
-
     damping_type_t   typeOfDamping     = -1;
     stiffness_type_t stiffness_method  = -1;
     noyesflag_t      have_buildings    = -1;
+    noyesflag_t      have_parametricq  = -1;
     noyesflag_t      includeNonlinear  = -1;
     noyesflag_t      printMatrixK      = -1;
     noyesflag_t      printStationVels  = -1;
@@ -732,6 +750,12 @@ static int32_t parse_parameters( const char* numericalin )
 
 
     fclose(fp); /* physics.in */
+
+
+
+
+
+
 
     if ((fp = fopen(numericalin, "r")) == NULL) {
 	fprintf(stderr, "Error opening %s\n", numericalin);
@@ -790,6 +814,9 @@ static int32_t parse_parameters( const char* numericalin )
                 numericalin );
         return -1;
     }
+
+
+
 
     hu_config_get_int_opt(fp, "output_mesh", &Param.theMeshOutFlag );
     hu_config_get_int_opt(fp, "enable_timing_barriers",&Param.theTimingBarriersFlag);
@@ -972,6 +999,8 @@ static int32_t parse_parameters( const char* numericalin )
                 "Unknown response for including buildings (yes or no): %s\n",
                 include_buildings );
     }
+    
+   
 
     if ( strcasecmp(implement_drm, "yes") == 0 ) {
         implementdrm = YES;
@@ -992,7 +1021,9 @@ static int32_t parse_parameters( const char* numericalin )
             "Unknown response using infinite Qk (yes or no): %s\n",
                 use_infinite_qk);
     }
-
+    
+    
+    
 	if ( strcasecmp(soil_softening, "yes") == 0 ) {
 		soilsoftening = YES;
 	} else if ( strcasecmp(soil_softening, "no") == 0 ) {
@@ -1002,6 +1033,12 @@ static int32_t parse_parameters( const char* numericalin )
 				"Unknown response for soil_softening (yes or no): %s\n",
 				soil_softening );
 	}
+	
+	
+    /* Check whether a profile will be used and init global flag to YES */
+    if ( strcasecmp(Param.cvmdb_input_file, "profile") == 0 ) {
+        Param.useProfile = YES;
+    }
 
     /* Init the static global variables */
 
@@ -1050,6 +1087,7 @@ static int32_t parse_parameters( const char* numericalin )
 
     Param.includeBuildings          = have_buildings;
 
+
     Param.storeMeshCoordinatesForMatlab  = meshCoordinatesForMatlab;
 
     Param.drmImplement              = implementdrm;
@@ -1083,6 +1121,91 @@ static int32_t parse_parameters( const char* numericalin )
 
 /*-----------Mesh generation related routines------------------------------*/
 
+/* In case a profile is used... */
+
+typedef enum {
+  PROFILE_VP = 0, PROFILE_VS, PROFILE_RHO, PROFILE_QP, PROFILE_QS
+} profile_flag_t;
+
+
+/**
+ * Interpolates the values of the profile property given the corresponding flag
+ * and the indices in the tables.
+ *
+ * @return float of property
+ */
+float interpolate_profile_property(double depth, int lowerIndex, int upperIndex, int flag) {
+
+    static const char* fname = __FUNCTION_NAME;
+    double* theProfileProperty = NULL;
+    double  theProperty;
+
+    switch (flag) {
+        case PROFILE_VP:
+            theProfileProperty = Param.theProfileVp;
+            break;
+        case PROFILE_VS:
+            theProfileProperty = Param.theProfileVs;
+            break;
+        case PROFILE_RHO:
+            theProfileProperty = Param.theProfileRho;
+            break;
+        case PROFILE_QP:
+            theProfileProperty = Param.theProfileQp;
+            break;
+        case PROFILE_QS:
+            theProfileProperty = Param.theProfileQs;
+            break;
+        default:
+            solver_abort(fname, NULL, "Error on interpolation of profile properties\n");
+    }
+
+    theProperty = theProfileProperty[lowerIndex]
+                + ( depth - Param.theProfileZ[lowerIndex] )
+                * ( theProfileProperty[upperIndex] - theProfileProperty[lowerIndex] )
+                / ( Param.theProfileZ[upperIndex] - Param.theProfileZ[lowerIndex] );
+
+    return (float)theProperty;
+}
+
+/**
+ * Finds the indices between which the depth queried is located and calls
+ * interpolate_profile to return the properties
+ *
+ * @return 0 on success
+ * @return 1 on failure
+ */
+int profile_query(double depth, cvmpayload_t* props) {
+
+    int i, last;
+    
+    last = Param.theNumberOfLayers - 1;
+    
+    if ( depth < 0 ) return 1;
+    
+    if ( depth >= Param.theProfileZ[last] ) {
+        props->Vp  = Param.theProfileVp[last];
+        props->Vs  = Param.theProfileVs[last];
+        props->rho = Param.theProfileRho[last];
+        return 0;
+    }
+    
+    for (i = 0; i < last; i++) {
+        
+        if ( (depth >= Param.theProfileZ[i]) && (depth < Param.theProfileZ[i+1]) ) {
+
+            props->Vp  = interpolate_profile_property(depth, i, i+1, PROFILE_VP );
+            props->Vs  = interpolate_profile_property(depth, i, i+1, PROFILE_VS );
+            props->rho = interpolate_profile_property(depth, i, i+1, PROFILE_RHO);
+            
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/* In case an etree is used...*/
 static void  open_cvmdb(void){
 
 #ifdef USECVMDB
@@ -1092,6 +1215,8 @@ static void  open_cvmdb(void){
 
     MPI_Barrier(comm_solver);
     Global.theCVMEp = etree_open(Param.cvmdb_input_file, O_RDONLY, CVMBUFSIZE, 0, 0 );
+//     fprintf( stderr, Param.cvmdb_input_file);
+//     fprintf(stderr, O_RDONLY);
 
     if (Global.theCVMEp == NULL) {
 	fprintf( stderr, "Thread %d: open_cvmdb: error opening CVM etree %s\n",
@@ -1148,7 +1273,7 @@ static void  open_cvmdb(void){
     Global.theZForMeshOrigin = double_message_extra[2];
 
 #else
-    strcpy(Param.theCVMFlatFile, cvmdb_input_file);
+    strcpy(Param.theCVMFlatFile, Param.cvmdb_input_file);
 #endif
 
 }
@@ -1351,10 +1476,8 @@ setrec( octant_t* leaf, double ticksize, void* data )
     edata->edgesize = ticksize * halfticks * 2;
 
     /* Check for buildings and proceed according to the buildings setrec */
-    if ( Param.includeBuildings == YES ) {
-		if ( bldgs_setrec( leaf, ticksize, edata, Global.theCVMEp,
-				Global.theXForMeshOrigin, Global.theYForMeshOrigin,
-				Global.theZForMeshOrigin ) ) {
+    if ( (Param.includeBuildings == YES) && (Param.useProfile == NO) ) {
+		if ( bldgs_setrec( leaf, ticksize, edata, Global.theCVMEp,Global.theXForMeshOrigin,Global.theYForMeshOrigin,Global.theZForMeshOrigin ) ) {
             return;
         }
     }
@@ -1383,8 +1506,12 @@ setrec( octant_t* leaf, double ticksize, void* data )
 			z_m -= get_surface_shift();
 		}
 
-		res = cvm_query( Global.theCVMEp, y_m, x_m, z_m, &g_props );
-
+        if (Param.useProfile == NO) {
+           res = cvm_query( Global.theCVMEp, y_m, x_m, z_m, &g_props );
+        } else {
+           res = profile_query(z_m, &g_props);
+        }
+        
 		if (res != 0) {
 		    continue;
 		}
@@ -1709,15 +1836,15 @@ static cvmrecord_t *sliceCVM(const char *cvm_flatfile)
     return cvmrecord;
 }
 
-
+/*
 static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 {
     cvmrecord_t *cvmrecord;
     int32_t bufferedbytes, bytecount, recordcount;
 
     if (Global.myID == Global.theGroupSize - 1) {
-	/* the last processor reads data and
-	   distribute to other processors*/
+	// the last processor reads data and
+	 //  distribute to other processors
 
 	FILE *fp;
 	int fd, procid;
@@ -1745,13 +1872,13 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	}
 
 	intervaltable = octor_getintervaltable(Global.myOctree);
-	/*
-	for (procid = 0; procid <= Global.myID; procid++) {
-	    fprintf(stderr, "interval[%d] = {%d, %d, %d}\n", procid,
-		    intervaltable[procid].x << 1, intervaltable[procid].y << 1,
-		    intervaltable[procid].z << 1);
-	}
-	*/
+	
+// 	for (procid = 0; procid <= Global.myID; procid++) {
+// 	    fprintf(stderr, "interval[%d] = {%d, %d, %d}\n", procid,
+// 		    intervaltable[procid].x << 1, intervaltable[procid].y << 1,
+// 		    intervaltable[procid].z << 1);
+// 	}
+// 	
 
 	bytesent = 0;
 	maxbuf = malloc(maxbufsize) ;
@@ -1761,7 +1888,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	    exit(1);
 	}
 
-	/* Try to read max number of CVM records as allowed */
+	// Try to read max number of CVM records as allowed 
 	recordcount = fread(maxbuf, sizeof(cvmrecord_t),
 			    maxbufsize / sizeof(cvmrecord_t), fp);
 
@@ -1771,17 +1898,17 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	    exit(1);
 	}
 
-	/* start with proc 0 */
+	// start with proc 0 
 	procid = 0;
 
-	while (procid < Global.myID) { /* repeatedly fill the buffer */
+	while (procid < Global.myID) { // repeatedly fill the buffer 
 	    point_t searchpoint, *point;
 	    int newreads;
 
-	    /* we have recordcount to work with */
+	    // we have recordcount to work with 
 	    cvmrecord = (cvmrecord_t *)maxbuf;
 
-	    while (procid < Global.myID) { /* repeatedly send out data */
+	    while (procid < Global.myID) { // repeatedly send out data 
 		searchpoint.x = intervaltable[procid + 1].x << 1;
 		searchpoint.y = intervaltable[procid + 1].y << 1;
 		searchpoint.z = intervaltable[procid + 1].z << 1;
@@ -1799,23 +1926,23 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 		    bytecount = offset * sizeof(cvmrecord_t);
 		    MPI_Send(cvmrecord, bytecount, MPI_CHAR, procid,
 			     CVMRECORD_MSG, comm_solver);
-		    /*
-		    fprintf(stderr,
-			    "Procid = %d offset = %qd bytecount = %d\n",
-			    procid, (int64_t)bytesent, bytecount);
-		    */
+		    
+// 		    fprintf(stderr,
+// 			    "Procid = %d offset = %qd bytecount = %d\n",
+// 			    procid, (int64_t)bytesent, bytecount);
+		    
 
 		    bytesent += bytecount;
 
-		    /* prepare for the next processor */
+		    // prepare for the next processor 
 		    recordcount -= offset;
 		    cvmrecord = (cvmrecord_t *)point;
 		    procid++;
 		}
 	    }
 
-	    /* Move residual data to the beginning of the buffer
-	       and try to fill the newly free space */
+	    // Move residual data to the beginning of the buffer
+	    //   and try to fill the newly free space 
 	    bufferedbytes = sizeof(cvmrecord_t) * recordcount;
 	    memmove(maxbuf, cvmrecord, bufferedbytes);
 	    newreads = fread((char *)maxbuf + bufferedbytes,
@@ -1828,7 +1955,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 
 	free(maxbuf);
 
-	/* I am supposed to accomodate the remaining octants */
+	// I am supposed to accomodate the remaining octants 
 	bytecount = statbuf.st_size - bytesent;
 
 	cvmrecord = (cvmrecord_t *)malloc(bytecount);
@@ -1839,7 +1966,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	    exit(1);
 	}
 
-	/* fseek exiting the for loop has file cursor propertly */
+	// fseek exiting the for loop has file cursor propertly 
 	if (fseeko(fp, bytesent, SEEK_SET) != 0) {
 	    fprintf(stderr, "Thread %d: fseeko failed\n", Global.myID);
 	    MPI_Abort(MPI_COMM_WORLD, ERROR);
@@ -1853,15 +1980,15 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 	    exit(1);
 	}
 
-	/*
-	  fprintf(stderr, "Procid = %d offset = %qd bytecount = %d\n",
-	  Global.myID, (int64_t)bytesent, bytecount);
-	*/
+	
+// 	  fprintf(stderr, "Procid = %d offset = %qd bytecount = %d\n",
+// 	  Global.myID, (int64_t)bytesent, bytecount);
+	
 
 	fclose(fp);
 
     } else {
-	/* wait for my turn till PE(n - 1) tells me to go ahead */
+	// wait for my turn till PE(n - 1) tells me to go ahead 
 
 	MPI_Status status;
 
@@ -1880,7 +2007,7 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
 
     }
 
-    /* Every processor should set these parameters correctly */
+    // Every processor should set these parameters correctly 
     Global.theCVMRecordCount = bytecount / sizeof(cvmrecord_t);
     if (Global.theCVMRecordCount * sizeof(cvmrecord_t) != (size_t)bytecount) {
 	fprintf(stderr, "Thread %d: received corrupted CVM data\n",
@@ -1892,13 +2019,14 @@ static cvmrecord_t *sliceCVM_old(const char *cvm_flatfile)
     return cvmrecord;
 }
 
-
+*/
 
 /**
  * setrec: Search the CVM record array to obtain the material property of
  *	   a leaf octant.
  *
  */
+ 
 void setrec(octant_t *leaf, double ticksize, void *data)
 {
     cvmrecord_t *agghit;
@@ -2209,13 +2337,14 @@ mesh_generate()
     }
 
 #ifdef USECVMDB
-    /* Close the material database */
-    etree_close(Global.theCVMEp);
+    if ( Param.useProfile == NO ) {
+        /* Close the material database */
+        etree_close(Global.theCVMEp);
+    }
 #else
     free(Global.theCVMRecord);
 #endif /* USECVMDB */
 }
-
 
 /**
  * toexpand: Instruct the Octor library whether a leaf octant needs to
@@ -3398,6 +3527,7 @@ static void solver_init()
     Global.mySolver->tm1    = (fvector_t *)calloc(Global.myMesh->nharbored, sizeof(fvector_t));
     Global.mySolver->tm2    = (fvector_t *)calloc(Global.myMesh->nharbored, sizeof(fvector_t));
     Global.mySolver->force  = (fvector_t *)calloc(Global.myMesh->nharbored, sizeof(fvector_t));
+    
     Global.mySolver->conv_shear_1 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
     Global.mySolver->conv_shear_2 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
     Global.mySolver->conv_kappa_1 = (fvector_t *)calloc(8 * Global.myMesh->lenum, sizeof(fvector_t));
@@ -3481,6 +3611,8 @@ static void solver_init()
         /* New formula for damping according to Graves */
         zeta = 10 / edata->Vs;
 
+// *? different ?***********************************************************************************
+
         n_0 = Global.myMesh->elemTable[eindex].lnid[0];
 
     	x_m = (Global.myOctree->ticksize)*Global.myMesh->nodeTable[n_0].x;
@@ -3514,6 +3646,9 @@ static void solver_init()
         if ( zeta > Param.theThresholdDamping ) {
         	zeta = Param.theThresholdDamping;
         }
+
+
+// ************************************************************************************
 
         /* the a,b coefficients */
         a = zeta * Global.theABase;
@@ -6964,6 +7099,115 @@ void output_stations_init( const char* numericalin )
 }
 
 
+/**
+ * Reads the profile layers from parameters.in - only done by PE0
+ */
+static void read_profile (  const char* parametersin ) {
+
+    static const char* fname = __FUNCTION_NAME;
+
+    int    iLayer;
+    double *auxtable;
+    FILE*  fp;
+
+    if ( (fp = fopen(parametersin, "r")) == NULL ) {
+        solver_abort(fname, parametersin, "Error opening parameters.in file\n");
+    }
+
+    if ( parsetext(fp, "number_profile_layers", 'i', &Param.theNumberOfLayers) != 0 ) {
+        solver_abort(fname, NULL, "Error reading the number of layers from %s\n", parametersin);
+    }
+
+    auxtable            = (double*)malloc(sizeof(double) * Param.theNumberOfLayers * 6);
+    Param.theProfileZ   = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileVp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileVs  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileRho = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileQp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    Param.theProfileQs  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+
+    if ( (auxtable            == NULL) ||
+         (Param.theProfileZ   == NULL) ||
+         (Param.theProfileVp  == NULL) ||
+         (Param.theProfileVs  == NULL) ||
+         (Param.theProfileRho == NULL) ||
+         (Param.theProfileQp  == NULL) ||
+         (Param.theProfileQs  == NULL) ) {
+        solver_abort(fname, NULL, "Error allocating memory for the profile\n");
+    }
+
+    if ( parsedarray(fp, "profile_layers", Param.theNumberOfLayers * 6, auxtable) != 0 ) {
+        solver_abort(fname, NULL, "Error parsing the profile layers from %s\n", parametersin);
+    }
+
+    for (iLayer = 0; iLayer < Param.theNumberOfLayers; iLayer++) {
+        Param.theProfileZ  [iLayer] = auxtable[ iLayer * 6     ];
+        Param.theProfileVp [iLayer] = auxtable[ iLayer * 6 + 1 ];
+        Param.theProfileVs [iLayer] = auxtable[ iLayer * 6 + 2 ];
+        Param.theProfileRho[iLayer] = auxtable[ iLayer * 6 + 3 ];
+        Param.theProfileQp [iLayer] = auxtable[ iLayer * 6 + 4 ];
+        Param.theProfileQs [iLayer] = auxtable[ iLayer * 6 + 5 ];
+    }
+
+    return;
+}
+
+
+/**
+ * Broadcasts the profile to all other PEs
+ */
+void broadcast_profile() {
+
+    static const char* fname = __FUNCTION_NAME;
+
+    MPI_Bcast(&Param.theNumberOfLayers, 1, MPI_INT, 0, comm_solver);
+
+    if ( Global.myID != 0 ) {
+        Param.theProfileZ   = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileVp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileVs  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileRho = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileQp  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+        Param.theProfileQs  = (double*)malloc(sizeof(double) * Param.theNumberOfLayers);
+    }
+
+    if ( Param.theProfileZ   == NULL ||
+         Param.theProfileVp  == NULL ||
+         Param.theProfileVs  == NULL ||
+         Param.theProfileRho == NULL ||
+         Param.theProfileQp  == NULL ||
+         Param.theProfileQs  == NULL ) {
+        solver_abort(fname, NULL, "Error allocating memory for the profile\n");
+    }
+
+    MPI_Barrier(comm_solver);
+
+    MPI_Bcast(Param.theProfileZ,   Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileVp,  Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileVs,  Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileRho, Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileQp,  Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+    MPI_Bcast(Param.theProfileQs,  Param.theNumberOfLayers, MPI_DOUBLE, 0, comm_solver);
+
+    return;
+}
+
+/**
+ * Load the velocity profile is given by the user
+ */
+void load_profile( const char* parametersin ) {
+
+    if ( Global.myID == 0 ) {
+        read_profile( parametersin );
+    }
+
+    broadcast_profile();
+    MPI_Barrier( comm_solver );
+
+    return;
+}
+
+
 
 /**
  * \note This function should only be called by PE with rank 0.
@@ -7328,8 +7572,11 @@ mesh_correct_properties( etree_t* cvm )
         				//                        }
         			}
 
-        			res = cvm_query( Global.theCVMEp, east_m, north_m,
-        					depth_m, &g_props );
+                    if (Param.useProfile == NO) {
+                        res = cvm_query( Global.theCVMEp, east_m, north_m, depth_m, &g_props );
+                    } else {
+                        res = profile_query(depth_m, &g_props);
+                    }
 
         			if (res != 0) {
         				fprintf(stderr, "Cannot find the query point\n");
@@ -7559,8 +7806,17 @@ int main( int argc, char** argv )
     /* Read input parameters from file */
     read_parameters(argc, argv);
 
-    /* Create and open database */
-    open_cvmdb();
+  if ( Param.useProfile == YES ) {
+
+        /* Read profile to memory */
+        load_profile( Param.parameters_input_file );
+
+    } else {
+
+        /* Create and open database */
+        open_cvmdb();
+    }
+
 
     /* Initialize nonlinear parameters */
     if ( Param.includeNonlinearAnalysis == YES ) {
