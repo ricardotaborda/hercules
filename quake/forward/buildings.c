@@ -939,11 +939,12 @@ int bldgs_nodesearch ( tick_t x, tick_t y, tick_t z, double ticksize ) {
 /**
  * Complement for the setrec function in psolve.
  * Return 1 if data is assigned to the octant, 0 otherwise.
+ * Also if profile is used for cvm, return 0 if the point is not in a building.
  */
 
 int bldgs_setrec ( octant_t *leaf, double ticksize,
                    edata_t *edata, etree_t *cvm,double xoriginm,
-                   double yoriginm, double zoriginm)
+                   double yoriginm, double zoriginm, noyesflag_t useProfile)
 {
     int          res;
     double       z_m;
@@ -958,6 +959,11 @@ int bldgs_setrec ( octant_t *leaf, double ticksize,
         return 1;
     }
 
+	if ( useProfile == YES ) {
+
+        return 0;
+    }
+	
     z_m = leaf->lz * ticksize;
 
     if ( z_m < theSurfaceShift ) {

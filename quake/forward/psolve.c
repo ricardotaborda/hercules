@@ -1476,10 +1476,37 @@ setrec( octant_t* leaf, double ticksize, void* data )
     edata->edgesize = ticksize * halfticks * 2;
 
     /* Check for buildings and proceed according to the buildings setrec */
-    if ( (Param.includeBuildings == YES) && (Param.useProfile == NO) ) {
-		if ( bldgs_setrec( leaf, ticksize, edata, Global.theCVMEp,Global.theXForMeshOrigin,Global.theYForMeshOrigin,Global.theZForMeshOrigin ) ) {
+    if ( Param.includeBuildings == YES ) {
+		if ( bldgs_setrec( leaf, ticksize, edata, Global.theCVMEp,Global.theXForMeshOrigin,Global.theYForMeshOrigin,Global.theZForMeshOrigin, Param.useProfile ) ) {
             return;
         }
+		/* Assign properties for air elements if profile is yes and element is an air element */
+		if ( (Param.useProfile == YES) && ( leaf->lz * ticksize < get_surface_shift() ) ) {
+			
+			double edgesize;
+			double halfedge;
+			
+			edgesize = edata->edgesize;
+			halfedge = edgesize * 0.5;
+			
+			z_m = ( leaf->lz * ticksize ) + halfedge;
+			
+			fprintf(stdout, " I am eliminating air elements for profile  \n");
+			
+			/* Get the Vs at that location on the surface (z = 0) */			
+			res = profile_query(0, &g_props);
+
+			/* Increase Vs as it gets far from the surface */
+			edata->Vs  = 2.0 * g_props.Vs * ( get_surface_shift() - z_m ) / ticksize;
+
+			/* Assign a negative Vp to identify the octants to carve */
+			edata->Vp  = -1;
+
+			/* Assign a zero to the density */
+			edata->rho = 0;
+			
+			return;
+		}
     }
 
     g_props_min.Vs  = FLT_MAX;

@@ -61,7 +61,8 @@ int bldgs_setrec   ( octant_t *leaf,
                      etree_t  *cvm,
                      double xoriginm,
                      double yoriginm,
-                     double zoriginm);
+                     double zoriginm,
+					 noyesflag_t useProfile);
 
 int bldgs_toexpand ( octant_t *leaf,
                      double    ticksize,
