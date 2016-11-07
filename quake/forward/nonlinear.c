@@ -1774,7 +1774,7 @@ void compute_nonlinear_state ( mesh_t     *myMesh,
 
             /* Do not compute plasticity for the linear case */
 //            if ( ( theMaterialModel == LINEAR ) || ( J2 == 0 ) ) {
-            if ( ( theMaterialModel == LINEAR ) ) {
+            if ( theMaterialModel == LINEAR ) {
             	continue;
             }
 

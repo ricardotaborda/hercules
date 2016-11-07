@@ -25,12 +25,12 @@
 typedef enum
 {
 
-  RAYLEIGH = 0, MASS, NONE, BKT
+  RAYLEIGH = 0, MASS, NONE, BKT, BKT2, BKT3, BKT3F
 
 } damping_type_t;
 
 void damping_addforce(mesh_t *myMesh, mysolver_t *mySolver, fmatrix_t (*theK1)[8], fmatrix_t (*theK2)[8]);
-void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theDeltaT, double theDeltaTSquared);
-void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theDeltaT, double theDeltaTSquared);
+void calc_conv(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theDeltaT, double theDeltaTSquared, damping_type_t typeOfDamping);
+void constant_Q_addforce(mesh_t *myMesh, mysolver_t *mySolver, double theFreq, double theDeltaT, double theDeltaTSquared, damping_type_t typeOfDamping);
 
 #endif /* DAMPING_H_ */
