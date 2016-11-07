@@ -213,6 +213,8 @@ static int*    theSourceNt1Array;
 static double* theSourceLonArray,*theSourceLatArray,*theSourceDepthArray;
 static double* theSourceAreaArray,*theSourceStrikeArray,*theSourceDipArray,
   *theSourceRakeArray,*theSourceSlipArray;
+static double* theSourceMxxArray,*theSourceMxyArray,*theSourceMxzArray,
+  *theSourceMyyArray,*theSourceMyzArray,*theSourceMzzArray;
 static double *theSourceTinitArray,*theSourceDtArray,**theSourceSlipFunArray ;
 
 /* Statistics variables and total moment ampitude*/
@@ -412,6 +414,57 @@ compute_source_function (ptsrc_t* pointSource)
 //
 //}
 
+/**
+ * Initialize the wighting force vector for an element due to a point
+ * moment tensor source.
+ */
+static void source_initnodalforce_moment ( ptsrc_t *sourcePtr )
+{
+    /* Normal vector n, tangent vector t, moment tensor v*/
+    double  v[3][3];
+
+    /* Auxiliar array to handle shapefunctions in a loop */
+    double  xi[3][8]={ {-1,  1, -1,  1, -1,  1, -1, 1} ,
+               {-1, -1,  1,  1, -1, -1,  1, 1} ,
+               {-1, -1, -1, -1,  1,  1,  1, 1} };
+
+    /* various convienient variables */
+    int j,k;
+    double dx, dy, dz;
+    double x = sourcePtr->x;
+    double y = sourcePtr->y;
+    double z = sourcePtr->z;
+    double h = sourcePtr->edgesize;
+    double hcube = h * h * h;
+
+    v[0][0] = sourcePtr->mxx;
+    v[0][1] = sourcePtr->mxy;
+    v[0][2] = sourcePtr->mxz;
+    v[1][0] = sourcePtr->mxy;
+    v[1][1] = sourcePtr->myy;
+    v[1][2] = sourcePtr->myz;
+    v[2][0] = sourcePtr->mxz;
+    v[2][1] = sourcePtr->myz;
+    v[2][2] = sourcePtr->mzz;
+
+    /* calculate equivalent force on each node */
+    for (j = 0; j < 8 ; j++) {
+    dx= (2 * xi[0][j]) * (h + 2 * xi[1][j] * y) * (h + 2 * xi[2][j] * z)
+        / (8 * hcube) ;
+
+    dy= (2 * xi[1][j]) * (h + 2 * xi[2][j] * z) * (h + 2 * xi[0][j] * x)
+        / (8 * hcube);
+
+    dz= (2 * xi[2][j]) * (h + 2 * xi[0][j] * x) * (h + 2 * xi[1][j] * y)
+        / (8 * hcube);
+
+    sourcePtr->nodalForce[j][0] = v[0][0]*dx + v[0][1]*dy + v[0][2]*dz;
+    sourcePtr->nodalForce[j][1] = v[1][0]*dx + v[1][1]*dy + v[1][2]*dz;
+    sourcePtr->nodalForce[j][2] = v[2][0]*dx + v[2][1]*dy + v[2][2]*dz;
+    }
+
+    return;
+}
 
 /**
  * Initialize the wighting force vector for an element due to a point
@@ -422,22 +475,11 @@ static void source_initnodalforce ( ptsrc_t *sourcePtr )
     /* Normal vector n, tangent vector t, moment tensor v*/
     double n[3], t[3], v[3][3];
 
-    /* Auxiliar array to handle shapefunctions in a loop */
-    double  xi[3][8]={ {-1,  1, -1,  1, -1,  1, -1, 1} ,
-		       {-1, -1,  1,  1, -1, -1,  1, 1} ,
-		       {-1, -1, -1, -1,  1,  1,  1, 1} };
-
     /* various convienient variables */
     int j, k;
-    double dx, dy, dz;
     double s = sourcePtr->strike / 180.0 * PI;
     double d = sourcePtr->dip / 180.0 * PI;
     double r = sourcePtr->rake / 180.0 * PI;
-    double x = sourcePtr->x;
-    double y = sourcePtr->y;
-    double z = sourcePtr->z;
-    double h = sourcePtr->edgesize;
-    double hcube = h * h * h;
 
     /* the fault normal unit vector */
     n[0] = - sin(s) * sin(d);
@@ -455,21 +497,14 @@ static void source_initnodalforce ( ptsrc_t *sourcePtr )
 	}
     }
 
-    /* calculate equivalent force on each node */
-    for (j = 0; j < 8 ; j++) {
-	dx= (2 * xi[0][j]) * (h + 2 * xi[1][j] * y) * (h + 2 * xi[2][j] * z)
-	    / (8 * hcube) ;
+    sourcePtr->mxx = v[0][0];
+    sourcePtr->mxy = v[0][1];
+    sourcePtr->mxz = v[0][2];
+    sourcePtr->myy = v[1][1];
+    sourcePtr->myz = v[1][2];
+    sourcePtr->mzz = v[2][2];
 
-	dy= (2 * xi[1][j]) * (h + 2 * xi[2][j] * z) * (h + 2 * xi[0][j] * x)
-	    / (8 * hcube);
-
-	dz= (2 * xi[2][j]) * (h + 2 * xi[0][j] * x) * (h + 2 * xi[1][j] * y)
-	    / (8 * hcube);
-
-	sourcePtr->nodalForce[j][0] = v[0][0]*dx + v[0][1]*dy + v[0][2]*dz;
-	sourcePtr->nodalForce[j][1] = v[1][0]*dx + v[1][1]*dy + v[1][2]*dz;
-	sourcePtr->nodalForce[j][2] = v[2][0]*dx + v[2][1]*dy + v[2][2]*dz;
-    }
+    source_initnodalforce_moment ( sourcePtr );
 
     return;
 }
@@ -1202,7 +1237,14 @@ load_myForces_with_point_source(
     pointSource->edgesize = myMesh->ticksize * edgeticks;
 
     /* set the nodal forces */
-    source_initnodalforce( pointSource );  /* get the weight for each node */
+    if (theTypeOfSource == SRFH) {
+        source_initnodalforce( pointSource );  /* get the weight for each node */
+    }
+
+    if (theTypeOfSource == FIXEDMOMENT) {
+        source_initnodalforce_moment( pointSource );
+    }
+    
 
     int isinprocessor = 0; /* if 8 will update the search */
     for (iNode = 0; iNode < 8; iNode++) {
@@ -1294,33 +1336,31 @@ static void update_point_source (ptsrc_t *pointSource,
 
 }
 
-static void
-compute_point_source_strike_srfh (ptsrc_t* ps, int32_t iSrc)
-{
-
+double compute_the_angle_north(int32_t iSrc) {
   vector3D_t pivot, pointInNorth, unitVec;
 
   double norm,fi ;
 
 
-  if( theLonlatOrCartesian == 1 )return;
+  if( theLonlatOrCartesian == 1 )return PI/2;
 
 
   if( theLonlatOrCartesian == 0 ){
 
     pivot = compute_domain_coords_linearinterp(theSourceLonArray[iSrc],
-					       theSourceLatArray[iSrc],
-					       theSurfaceCornersLong ,
-		 			       theSurfaceCornersLat,
-					       theRegionLengthEastM,
-					       theRegionLengthNorthM );
+                           theSourceLatArray[iSrc],
+                           theSurfaceCornersLong ,
+                           theSurfaceCornersLat,
+                           theRegionLengthEastM,
+                           theRegionLengthNorthM );
 
     pointInNorth = compute_domain_coords_linearinterp(theSourceLonArray[iSrc],
-						      theSourceLatArray[iSrc]+.1,
-						      theSurfaceCornersLong ,
-						      theSurfaceCornersLat,
-						      theRegionLengthEastM,
-						      theRegionLengthNorthM );
+                              theSourceLatArray[iSrc]+.1,
+                              theSurfaceCornersLong ,
+                              theSurfaceCornersLat,
+                              theRegionLengthEastM,
+                              theRegionLengthNorthM );
+    }
 
 
     /* Compute Unit Vector */
@@ -1333,20 +1373,86 @@ compute_point_source_strike_srfh (ptsrc_t* ps, int32_t iSrc)
     unitVec.x[0]= unitVec.x[0]/norm;
 
     /* Compute the Angle North-X axis */
-    fi = atan( unitVec.x[0]/unitVec.x[1]);
+    fi = atan2( unitVec.x[1],unitVec.x[0]);
 
-    if(  unitVec.x[1] < 0 ) /* in rad*/
-      fi = fi + PI;
-
-    /* Compute the strike */
-    ps->strike =90+ ps->strike-( 180*fi/PI);
-
-
-  }
+    return fi;
 
 }
 
+static void
+compute_point_source_strike_srfh (ptsrc_t* ps, int32_t iSrc)
+{
 
+    double fi;
+
+    fi = compute_the_angle_north(iSrc);
+
+    /* Compute the strike */
+    ps->strike = ps->strike+( 180*fi/PI);
+
+}
+
+ void rotate_moment_tensor(ptsrc_t *sourcePtr, int32_t iSrc) {
+    double  v[3][3],tmp[3][3],d[3][3],v1[3][3];
+    double fi;
+    int j,k,l;
+
+    // compute the rotation angle
+    fi = compute_the_angle_north(iSrc);
+
+    // moment tensor M
+    v[0][0] = sourcePtr->mxx;
+    v[0][1] = sourcePtr->mxy;
+    v[0][2] = sourcePtr->mxz;
+    v[1][0] = sourcePtr->mxy;
+    v[1][1] = sourcePtr->myy;
+    v[1][2] = sourcePtr->myz;
+    v[2][0] = sourcePtr->mxz;
+    v[2][1] = sourcePtr->myz;
+    v[2][2] = sourcePtr->mzz;
+
+    // compute rotatoin matrix D
+    d[0][0] = cos(fi);
+    d[0][1] = -sin(fi);
+    d[0][2] = 0;
+    d[1][0] = sin(fi);
+    d[1][1] = cos(fi);
+    d[1][2] = 0;
+    d[2][0] = 0;
+    d[2][1] = 0;
+    d[2][2] = 1;
+
+    // rotated moment is is computed by D*M*D'(' Means transpose)
+    // D*M
+    for (j = 0; j < 3; j++) {
+        for (k = 0; k < 3; k++) {
+            tmp[j][k] = 0;
+            for (l = 0; l < 3; l++) {
+                tmp[j][k] += d[j][l]*v[l][k];
+            }
+        }
+    }
+
+    // D*M*D'
+    for (j = 0; j < 3; j++) {
+        for (k = 0; k < 3; k++) {
+            v1[j][k] = 0;
+            for (l = 0; l < 3; l++) {
+                v1[j][k] += tmp[j][l]*d[k][l];
+            }
+        }
+    }
+
+    sourcePtr->mxx = v1[0][0];
+    sourcePtr->mxy = v1[0][1];
+    sourcePtr->mxz = v1[0][2];
+    sourcePtr->myy = v1[1][1];
+    sourcePtr->myz = v1[1][2];
+    sourcePtr->mzz = v1[2][2];
+
+    return;
+
+ }
 
 /*
  * update_point_source: updates a source in the context of an extended
@@ -1359,14 +1465,21 @@ static void update_point_source_srfh (ptsrc_t *pointSource, int32_t isource){
 
   for(iTime=0; iTime < theNumberOfTimeSteps; iTime++)
     pointSource->displacement[iTime]=0.;
+  if (theTypeOfSource == SRFH) {
+    pointSource->strike =  theSourceStrikeArray[isource];
+    compute_point_source_strike_srfh(pointSource,isource);
+    pointSource->dip    =  theSourceDipArray[isource];
+    pointSource->rake   =  theSourceRakeArray[isource];
+  } else {
+    pointSource->mxx    = theSourceMxxArray[isource];
+    pointSource->mxy    = theSourceMxyArray[isource];
+    pointSource->mxz    = theSourceMxzArray[isource];
+    pointSource->myy    = theSourceMyyArray[isource];
+    pointSource->myz    = theSourceMyzArray[isource];
+    pointSource->mzz    = theSourceMzzArray[isource];
+    rotate_moment_tensor(pointSource,isource);
+  }
 
-  pointSource->strike =  theSourceStrikeArray[isource];
-
-  compute_point_source_strike_srfh(pointSource,isource);
-
-
-  pointSource->dip    =  theSourceDipArray[isource];
-  pointSource->rake   =  theSourceRakeArray[isource];
   pointSource->area   =  theSourceAreaArray[isource];
   pointSource->maxSlip=  theSourceSlipArray[isource];
   pointSource->nt1    =  theSourceNt1Array[isource];
@@ -1377,7 +1490,6 @@ static void update_point_source_srfh (ptsrc_t *pointSource, int32_t isource){
 
 
   compute_source_function( pointSource );
-
 
   return;
 }
@@ -2343,6 +2455,105 @@ read_srfh_source ( FILE *fp, FILE *fpcoords, FILE *fparea, FILE *fpstrike,
     fscanf(fpstrike, " %lf ", &(theSourceStrikeArray[iSrc]));
     fscanf(fpdip,    " %lf ", &(theSourceDipArray[iSrc]));
     fscanf(fprake,   " %lf ", &(theSourceRakeArray[iSrc]));
+    fscanf(fpslip,   " %lf ", &(theSourceSlipArray[iSrc]));
+    fscanf(fpslipfun," %d ",  &(theSourceNt1Array[iSrc]));
+    fscanf(fpslipfun," %lf ", &(theSourceTinitArray[iSrc]));
+    fscanf(fpslipfun," %lf ", &(theSourceDtArray[iSrc]));
+
+    theSourceDepthArray[iSrc] += surfaceShift;
+    theSourceTinitArray[iSrc] += globalDelayT;
+
+    theSourceSlipFunArray[iSrc]=malloc(sizeof(double)*theSourceNt1Array[iSrc]);
+
+    for ( iTime = 0; iTime < theSourceNt1Array[iSrc]; iTime++)
+      fscanf(fpslipfun," %lf ", &(theSourceSlipFunArray[iSrc][iTime]));
+  }
+
+  /* corners of the surface */
+  auxiliar = (double *)malloc(sizeof(double)*8);
+  if ( auxiliar == NULL ) {
+    perror(" Alloc auxiliar: read_srfh_source");
+    MPI_Abort(MPI_COMM_WORLD, ERROR );
+    return -1;
+  }
+  parsedarray( fp, "domain_surface_corners", 8 ,auxiliar);
+  for ( iCorner = 0; iCorner < 4; iCorner++){
+    theSurfaceCornersLong[ iCorner ] = auxiliar [ iCorner * 2 ];
+    theSurfaceCornersLat [ iCorner ] = auxiliar [ iCorner * 2 +1 ];
+  }
+
+  free(auxiliar);
+
+  return 1;
+
+}
+
+/**
+ *  read_moment_source: read all the parameters fot the standard
+ *                    rupture format hercules version. But for
+ *                    moment tensor source
+ *
+ *           input :      fp  -  to source.in
+ *                  fpcoords  -  to coordinates of the fault
+ *                  fpmoment  - mxx mxy mxz myy myz mzz
+ *                    fpslip  -
+ *                 fpslipfun  -  slip function discretized
+ *
+ *           output :  1 - ok -1 fail
+ *
+ */
+static int
+read_moment_source ( FILE *fp, FILE *fpcoords, FILE *fparea, FILE *fpmoment,
+           FILE *fpslip, FILE *fpslipfun, double globalDelayT, double surfaceShift )
+{
+  int32_t iSrc;
+  double *auxiliar;
+  int iCorner, iTime;
+
+  if ( (parsetext(fp, "number_of_point_sources", 'i', &theNumberOfPointSources) != 0) ){
+    fprintf(stderr, "Cannot query number of point source\n");
+    return -1;
+  }
+
+  theSourceLonArray     = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceLatArray     = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceDepthArray   = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceAreaArray    = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceMxxArray     = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceMxyArray     = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceMxzArray     = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceMyyArray     = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceMyzArray     = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceMzzArray     = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceSlipArray    = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceNt1Array     = malloc( sizeof( int )   * theNumberOfPointSources );
+  theSourceTinitArray   = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceDtArray      = malloc( sizeof( double) * theNumberOfPointSources );
+  theSourceSlipFunArray = malloc( sizeof( double* ) * theNumberOfPointSources );
+
+  if ( (theSourceLonArray    == NULL) || (theSourceLatArray     == NULL) ||
+       (theSourceDepthArray  == NULL) || (theSourceSlipArray  == NULL) ||
+       (theSourceMxxArray    == NULL) || (theSourceMxyArray     == NULL) ||
+       (theSourceMxzArray    == NULL) || (theSourceMyyArray     == NULL) ||
+       (theSourceMyzArray    == NULL) || (theSourceSlipArray    == NULL) ||
+       (theSourceNt1Array    == NULL) || (theSourceTinitArray   == NULL) ||
+       ( theSourceDtArray    == NULL) || (theSourceSlipFunArray == NULL) ||
+       (theSourceMzzArray    == NULL)){
+    ABORT_PROGRAM ("Error source srfh matrices: read_srfh_source");
+  }
+
+  /* read fault points description */
+  for ( iSrc = 0; iSrc < theNumberOfPointSources; iSrc++ ){
+    fscanf(fpcoords," %lf %lf %lf ", &(theSourceLonArray[iSrc]),
+       &(theSourceLatArray[iSrc]),
+       &(theSourceDepthArray[iSrc]));
+    fscanf(fpmoment, "%lf ",  &(theSourceMxxArray[iSrc]));
+    fscanf(fpmoment, "%lf ",  &(theSourceMxyArray[iSrc]));
+    fscanf(fpmoment, "%lf ",  &(theSourceMxzArray[iSrc]));
+    fscanf(fpmoment, "%lf ",  &(theSourceMyyArray[iSrc]));
+    fscanf(fpmoment, "%lf ",  &(theSourceMyzArray[iSrc]));
+    fscanf(fpmoment, "%lf ",  &(theSourceMzzArray[iSrc]));
+    fscanf(fparea,   " %lf ", &(theSourceAreaArray[iSrc]));
     fscanf(fpslip,   " %lf ", &(theSourceSlipArray[iSrc]));
     fscanf(fpslipfun," %d ",  &(theSourceNt1Array[iSrc]));
     fscanf(fpslipfun," %lf ", &(theSourceTinitArray[iSrc]));
@@ -3420,7 +3631,7 @@ static int  compute_myForces_srfh(const char *physicsin){
 	  load_myForces_with_point_source(octant, &pntSrc,
 					  is_force_in_processor, iCycle, iSrc);
 
-	  if (myID == 0 && iCycle == 0) {
+	  if (myID == 0 && iCycle == 0 && theTypeOfSource == SRFH) {
 	      /* useful just with one processor */
 	      fprintf(fpdsrc,"%f %f %f %f %f %f %f %f\n",
 		      pntSrc.domainCoords.x[0], pntSrc.domainCoords.x[1],
@@ -3617,7 +3828,6 @@ broadcast_srfh_parameters( void )
 	XMALLOC_VAR_N( theSourceDipArray,     double,  count );
 	XMALLOC_VAR_N( theSourceRakeArray,    double,  count );
 	XMALLOC_VAR_N( theSourceSlipArray,    double,  count );
-	XMALLOC_VAR_N( theSourceSlipArray,    double,  count );
 	XMALLOC_VAR_N( theSourceTinitArray,   double,  count );
 	XMALLOC_VAR_N( theSourceDtArray,      double,  count );
 	XMALLOC_VAR_N( theSourceNt1Array,     int32_t, count );
@@ -3652,6 +3862,78 @@ broadcast_srfh_parameters( void )
     for (iSource = 0; iSource < count; iSource++) {
 	MPI_Bcast( theSourceSlipFunArray[iSource], theSourceNt1Array[iSource],
 		   MPI_DOUBLE, 0, comm_solver );
+    }
+}
+
+/**
+ * Broadcast moment tensor parameters.
+ *
+ * \note It initializes various global variables (too many to list here).
+ */
+static void
+broadcast_moment_parameters( void )
+{
+    /* this only applies to srfh sources */
+    if (theTypeOfSource != FIXEDMOMENT) {
+    return;
+    }
+
+    MPI_Bcast( theSurfaceCornersLat,     4, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSurfaceCornersLong,    4, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( &theNumberOfPointSources, 1, MPI_INT,    0, comm_solver );
+
+    int count = theNumberOfPointSources;
+
+    /* allocate necessary arrays */
+    if (myID != 0) {
+    XMALLOC_VAR_N( theSourceLonArray,     double,  count );
+    XMALLOC_VAR_N( theSourceLatArray,     double,  count );
+    XMALLOC_VAR_N( theSourceDepthArray,   double,  count );
+    XMALLOC_VAR_N( theSourceAreaArray,    double,  count );
+    XMALLOC_VAR_N( theSourceMxxArray,     double,  count );
+    XMALLOC_VAR_N( theSourceMxyArray,     double,  count );
+    XMALLOC_VAR_N( theSourceMxzArray,     double,  count );
+    XMALLOC_VAR_N( theSourceMyyArray,     double,  count );
+    XMALLOC_VAR_N( theSourceMyzArray,     double,  count );
+    XMALLOC_VAR_N( theSourceMzzArray,     double,  count );
+    XMALLOC_VAR_N( theSourceSlipArray,    double,  count );
+    XMALLOC_VAR_N( theSourceTinitArray,   double,  count );
+    XMALLOC_VAR_N( theSourceDtArray,      double,  count );
+    XMALLOC_VAR_N( theSourceNt1Array,     int32_t, count );
+    } /* (myID != 0) : memory allocation block */
+
+    /* broadcast parameter arrays */
+    MPI_Bcast( theSourceLonArray,    count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceLatArray,    count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceDepthArray,  count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceAreaArray,   count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceMxxArray,    count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceMxyArray,    count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceMxzArray,    count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceMyyArray,    count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceMyzArray,    count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceMzzArray,    count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceSlipArray,   count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceTinitArray,  count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceDtArray,     count, MPI_DOUBLE, 0, comm_solver );
+    MPI_Bcast( theSourceNt1Array,    count, MPI_INT,    0, comm_solver );
+
+    /* allocate memory for the slip function arrays */
+    if (myID != 0) {
+    int i;
+
+    XMALLOC_VAR_N( theSourceSlipFunArray, double*, count );
+    for (i = 0; i < count; i++) {
+        int length = theSourceNt1Array[i];
+        XMALLOC_VAR_N( theSourceSlipFunArray[i], double, length );
+    }
+    }
+
+    /* broadcast slip function arrays */
+    int iSource;
+    for (iSource = 0; iSource < count; iSource++) {
+    MPI_Bcast( theSourceSlipFunArray[iSource], theSourceNt1Array[iSource],
+           MPI_DOUBLE, 0, comm_solver );
     }
 }
 
@@ -3812,6 +4094,8 @@ source_broadcast_parameters( void )
 
     broadcast_srfh_parameters();
 
+    broadcast_moment_parameters();
+
     return;
 }
 
@@ -3845,6 +4129,10 @@ source_read_type( FILE* fpsrc )
 	source_type = SRFH;
     }
 
+    else if (strcasecmp( type_of_source, "fixedmoment" ) == 0) {
+    source_type = FIXEDMOMENT;
+    }
+
     else {
 	fprintf(stderr, "ERROR: Unknown type_of_source %s\n", type_of_source);
 	ABORT_PROGRAM( "ERROR: Unknown type_of_source" );
@@ -3870,10 +4158,10 @@ source_init_parameters( const char* physicsin,
                         double      surfaceShift )
 {
     FILE* fparea, *fpstrike, *fpdip, *fprake, *fpslip, *fpcoords,
-	*fpslipfun;
+	*fpslipfun, *fpmoment;
 
     char source_dir[256], slipin[256], slipfunin[256];
-    char coordsin[256], areain[256], strikein[256], dipin[256], rakein[256];
+    char coordsin[256], areain[256], strikein[256], dipin[256], rakein[256], momentin[256];
 
     size_t src_dir_len = sizeof(source_dir);
     size_t sdo_len     = 0;
@@ -3969,6 +4257,34 @@ source_init_parameters( const char* physicsin,
 	fclose(fpslipfun);
     }
 
+    if (theTypeOfSource == FIXEDMOMENT) {
+    sprintf( coordsin, "%s/coords.in", source_dir );
+    sprintf( areain,   "%s/area.in",   source_dir );
+    sprintf( momentin, "%s/moment.in", source_dir );
+    sprintf( slipin,   "%s/slip.in", source_dir );
+    sprintf( slipfunin,"%s/slipfunction.in", source_dir );
+
+    if ( (fpcoords = fopen( coordsin, "r")) == NULL ||
+         (fparea   = fopen( areain,   "r")) == NULL ||
+         (fpmoment = fopen( momentin, "r")) == NULL ||
+         (fpslip   = fopen( slipin,   "r")) == NULL ||
+         (fpslipfun   = fopen( slipfunin,   "r")) == NULL) {
+        fprintf(stderr, "Error opening srfh files\n" );
+        return -1;
+    }
+
+    if (read_moment_source( fpsrc, fpcoords, fparea, fpmoment,
+                  fpslip, fpslipfun, globalDelayT,
+                  surfaceShift ) == -1) {
+        return -1;
+    }
+    fclose(fpcoords);
+    fclose(fparea);
+    fclose(fpmoment);
+    fclose(fpslip);
+    fclose(fpslipfun);
+    }
+
     close_file( &fpsrc );
 
     return 0;
@@ -4043,7 +4359,7 @@ compute_print_source( const char *physicsin, octree_t *myoctree,
 	}
 
     /* Standard Rupture Fault Hercules, variation of SRF by Graves */
-    if(  theTypeOfSource == SRFH )
+    if(  theTypeOfSource == SRFH || theTypeOfSource == FIXEDMOMENT)
 	if( compute_myForces_srfh(physicsin )==-1){
 	    fprintf(stdout,"Err compute_myForces_srfh failed");
 	    ABORTEXIT;
