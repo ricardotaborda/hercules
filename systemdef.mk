@@ -28,10 +28,20 @@ ifeq ($(SYSTEM), XT5)
         ifdef IOBUF_INC
             CPPFLAGS += -I${IOBUF_INC}
         endif        
-        CPPFLAGS    += -D_USE_FILE_OFFSET64 -D_FILE_OFFSET_BITS=64 -D_USE_LARGEFILE64       
-        
+        CPPFLAGS    += -D_USE_FILE_OFFSET64 -D_FILE_OFFSET_BITS=64 -D_USE_LARGEFILE64
 endif
 
+ifeq ($(SYSTEM), XK7CPU)
+        CC      = cc
+        CXX     = CC
+        LD      = CC
+        CFLAGS  += -DBIGBEN 
+        LDFLAGS += -Wl,-zmuldefs
+        ifdef IOBUF_INC
+            CPPFLAGS += -I${IOBUF_INC}
+        endif        
+        CPPFLAGS    += -D_USE_FILE_OFFSET64 -D_FILE_OFFSET_BITS=64 -D_USE_LARGEFILE64
+endif
 
 ifeq ($(SYSTEM), BGW)
 	MPI_DIR ?= /bgl/BlueLight/ppcfloor/bglsys
