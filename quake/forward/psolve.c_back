@@ -59,14 +59,7 @@
 #include "meshformatlab.h"
 #include "topography.h"
 
-
-#include "XYtoLL.h"      // added by Khurram
-#include "constants.h" 
-#include "structs.h"
-#include "functions.h"
-
 /* ONLY GLOBAL VARIABLES ALLOWED OUTSIDE OF PARAM. and GLOBAL. IN ALL OF PSOLVE!! */
-
 MPI_Comm comm_solver;
 MPI_Comm comm_IO;
 
@@ -99,13 +92,6 @@ MPI_Comm comm_IO;
 #define DISTRIBUTION    903  /**< Dangling nodes to anchored nodes */
 #define ASSIGNMENT      904  /**< Anchored nodes to dangling nodes */
 
-velo_mod_1d_data *VELO_MOD_1D_DATA;     // Added by Khurram
-nz_tomography_data *NZ_TOMOGRAPHY_DATA;
-global_surfaces *GLOBAL_SURFACES;
-basin_data *BASIN_DATA;
-calculation_log *CALCULATION_LOG;
-char *MODEL_VERSION;
-global_model_parameters *GLOBAL_MODEL_PARAMETERS;
 
 /*---------------Initialization and cleanup routines----------------------*/
 static void    read_parameters(int argc, char **argv);
@@ -1414,39 +1400,7 @@ setrec( octant_t* leaf, double ticksize, void* data )
                     z_m -= get_surface_shift();
 		}
 
-//		res = cvm_query( Global.theCVMEp, y_m, x_m, z_m, &g_props );
-
-                double lat_point; 
-                double lon_point; 
-                double depth_point;
-
-
-        lat_point= get_lat(y_m, x_m, Param.theDomainX, Param.theDomainY, Param.theSurfaceCornersLat[0], Param.theSurfaceCornersLat[3], Param.theSurfaceCornersLat[1], Param.theSurfaceCornersLat[2]); 
-        lon_point= get_lon(y_m, x_m, Param.theDomainX, Param.theDomainY, Param.theSurfaceCornersLong[0], Param.theSurfaceCornersLong[3], Param.theSurfaceCornersLong[1], Param.theSurfaceCornersLong[2] );
-        depth_point= -1.0* z_m;
-         
-        
-        qualities_vector *QUALITIES_VECTOR;
-        QUALITIES_VECTOR = malloc(sizeof(qualities_vector));
-        if (QUALITIES_VECTOR == NULL) 
-        {
-            printf("Memory allocation of QUALITIES_VECTOR failed.\n");
-            exit(EXIT_FAILURE);
-        }
-       //fprintf(stderr, "The domain lat,long,depth %lf,%lf,  \n", lat_point, lon_point); 
- 
-       main_function(lat_point, lon_point, depth_point, CALCULATION_LOG, VELO_MOD_1D_DATA, NZ_TOMOGRAPHY_DATA, GLOBAL_SURFACES, BASIN_DATA, QUALITIES_VECTOR);
-        
-        //main_function( lat_point, lon_point, CALCULATION_LOG, VELO_MOD_1D_DATA, NZ_TOMOGRAPHY_DATA, GLOBAL_SURFACES, BASIN_DATA);
-
-       //fprintf(stderr, "These are QUALITIES_VECTOR values, %lf,%lf, %lf \n", QUALITIES_VECTOR->Vp[0], QUALITIES_VECTOR->Vs[0], QUALITIES_VECTOR->Rho[0] );
-       
-       g_props.Vp  = (float) 1000.0 * QUALITIES_VECTOR->Vp[0];
-       g_props.Vs  = (float) 1000.0 * QUALITIES_VECTOR->Vs[0];
-       g_props.rho = (float) 1000.0 * QUALITIES_VECTOR->Rho[0];
-       //fprintf(stderr, "*");
-       
-      free(QUALITIES_VECTOR);
+		res = cvm_query( Global.theCVMEp, y_m, x_m, z_m, &g_props );
 
 		if (res != 0) {
 		    continue;
@@ -2268,7 +2222,7 @@ mesh_generate()
 
 #ifdef USECVMDB
     /* Close the material database */
-//    etree_close(Global.theCVMEp);
+    etree_close(Global.theCVMEp);
 #else
     free(Global.theCVMRecord);
 #endif /* USECVMDB */
@@ -7500,39 +7454,14 @@ mesh_correct_properties( etree_t* cvm )
 
             		}
 
-//                    res = cvm_query( Global.theCVMEp, east_m, north_m,
-//                                     depth_m, &g_props );
-//
-//                    if (res != 0) {
-//                        fprintf(stderr, "Cannot find the query point: east = %lf, north = %lf, depth = %lf \n",
-//                        		east_m, north_m, depth_m);
-//                        exit(1);
-//                    }
+                    res = cvm_query( Global.theCVMEp, east_m, north_m,
+                                     depth_m, &g_props );
 
-                    double lat_point; 
-                    double lon_point; 
-                    double depth_point;
-                    //lat_point= get_lat( east_m , north_m);
-                    // lon_point= get_lon( east_m,  north_m);
-                    // //fprintf(stderr, "Depth value, %lf, %lf, %lf \n", y_m,x_m,z_m);
-                    
-                    lat_point= get_lat(east_m , north_m, Param.theDomainX, Param.theDomainY, Param.theSurfaceCornersLat[0], Param.theSurfaceCornersLat[3], Param.theSurfaceCornersLat[1], Param.theSurfaceCornersLat[2]); 
-                    lon_point= get_lon(east_m , north_m, Param.theDomainX, Param.theDomainY, Param.theSurfaceCornersLong[0], Param.theSurfaceCornersLong[3], Param.theSurfaceCornersLong[1], Param.theSurfaceCornersLong[2] );
-                    depth_point= -1.0* depth_m;  
-                    qualities_vector *QUALITIES_VECTOR;
-                    QUALITIES_VECTOR = malloc(sizeof(qualities_vector));
-                        if (QUALITIES_VECTOR == NULL) 
-                        {
-                            printf("Memory allocation of QUALITIES_VECTOR failed.\n");
-                            exit(EXIT_FAILURE);
-                        } 
-                    main_function(lat_point, lon_point, depth_point, CALCULATION_LOG, VELO_MOD_1D_DATA, NZ_TOMOGRAPHY_DATA, GLOBAL_SURFACES, BASIN_DATA, QUALITIES_VECTOR);
-                    g_props.Vp  = (float) 1000.0 * QUALITIES_VECTOR->Vp[0];
-                    g_props.Vs  = (float) 1000.0 * QUALITIES_VECTOR->Vs[0];
-                    g_props.rho = (float) 1000.0 * QUALITIES_VECTOR->Rho[0];
-                    //fprintf(stderr, "mesh correct after conversion, %lf\n",g_props.Vp);
-                    
-                    free(QUALITIES_VECTOR);                  
+                    if (res != 0) {
+                        fprintf(stderr, "Cannot find the query point: east = %lf, north = %lf, depth = %lf \n",
+                        		east_m, north_m, depth_m);
+                        exit(1);
+                    }
 
         			vp  += g_props.Vp;
         			vs  += g_props.Vs;
@@ -7782,77 +7711,6 @@ int main( int argc, char** argv )
     /* Init Quality Factor Table */
     constract_Quality_Factor_Table();
 
-
-    // load NZ datasets
-      // read in velocity model data (surfaces, 1D models, tomography etc)
-    
-    VELO_MOD_1D_DATA = malloc(sizeof(velo_mod_1d_data));
-    if (VELO_MOD_1D_DATA == NULL)
-    {
-        printf("Memory allocation of VELO_MOD_1D_DATA failed.\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    NZ_TOMOGRAPHY_DATA = malloc(sizeof(nz_tomography_data));
-    if (NZ_TOMOGRAPHY_DATA == NULL)
-    {
-        printf("Memory allocation of NZ_TOMOGRAPHY_DATA failed.\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    GLOBAL_SURFACES = malloc(sizeof(global_surfaces));
-    if (GLOBAL_SURFACES == NULL)
-    {
-        printf("Memory allocation of GLOBAL_SURFACES failed.\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    BASIN_DATA = malloc(sizeof(basin_data));
-    if (BASIN_DATA == NULL)
-    {
-        printf("Memory allocation of BASIN_DATA failed.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    CALCULATION_LOG = malloc(sizeof(calculation_log));
-
-    
-
-    MODEL_VERSION= "1.65";
-    GLOBAL_MODEL_PARAMETERS = getGlobalModelParameters(MODEL_VERSION);
-
-
-    loadAllGlobalData(GLOBAL_MODEL_PARAMETERS, CALCULATION_LOG, VELO_MOD_1D_DATA, NZ_TOMOGRAPHY_DATA, GLOBAL_SURFACES, BASIN_DATA);
-
-    //  This part is to give coordinates to the XYtoLL.c file
-    //*****************************************************************
-    static const char* fname = __FUNCTION_NAME;
-
-    int    iCorner;
-    double *auxiliar;
-    FILE*  fp;
-
-    /* obtain the stations specifications */
-    if ( (fp = fopen ( Param.parameters_input_file, "r")) == NULL ) {
-    solver_abort (fname, Param.parameters_input_file,
-              "Error opening parametersin configuration file");
-    }
-
-    auxiliar = (double *)malloc(sizeof(double)*8);
-
-    if ( parsedarray( fp, "domain_surface_corners", 8, auxiliar ) != 0) {
-    solver_abort( fname, NULL,
-              "Error parsing domain_surface_corners field from %s\n",
-              Param.parameters_input_file);
-    }
-
-    for ( iCorner = 0; iCorner < 4; iCorner++){
-    Param.theSurfaceCornersLong[ iCorner ] = auxiliar [ iCorner * 2 ];
-    Param.theSurfaceCornersLat [ iCorner ] = auxiliar [ iCorner * 2 +1 ];
-    }
-    free(auxiliar);
-
-    //*******************************************
     /* Generate, partition and output unstructured octree mesh */
     mesh_generate();
 
@@ -7928,14 +7786,6 @@ int main( int argc, char** argv )
     solver_printstat( Global.mySolver );
     Timer_Stop("Solver Stats Print");
     Timer_Reduce("Solver Stats Print", MAX | MIN, comm_solver);
-
-    free(VELO_MOD_1D_DATA);
-//    freeEPtomoSurfaceData(NZ_TOMOGRAPHY_DATA);
-    free(NZ_TOMOGRAPHY_DATA);
-    free(GLOBAL_SURFACES);
-//    freeGlobalSurfaceData(GLOBAL_SURFACES, GLOBAL_MODEL_PARAMETERS);
-//    freeAllBasinSurfaces(BASIN_DATA, GLOBAL_MODEL_PARAMETERS);
-    free(BASIN_DATA);
 
     /* Initialize nonlinear solver analysis structures */
     if ( Param.includeNonlinearAnalysis == YES ) {

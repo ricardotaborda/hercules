@@ -49,7 +49,11 @@ endif
 # Object modules 
 #
 PSOLVE_OBJECTS = psolve.o nrutila.o quakesource.o geometrics.o nonlinear.o \
-	commutil.o util.o output.o io_planes.o io_checkpoint.o stiffness.o damping.o quake_util.o timers.o buildings.o meshformatlab.o drm.o topography.o
+	commutil.o util.o output.o io_planes.o io_checkpoint.o stiffness.o damping.o quake_util.o timers.o buildings.o meshformatlab.o drm.o topography.o \
+	BrocherCorrelations.o EPtomo2010subMod.o NaNsubMod.o XYtoLL.o assignValues.o basinSubModels.o callRoutines.o createOutputDirectories.o \
+    determineSurfaceDepths.o extractPartialMesh.o findAdjacentPoints.o findSubVeloModelInd.o generateModelGrid.o generateProfile.o \
+    getSurfSubModNames.o linearInterpolation.o loadAllData.o loadBasins.o loadSurface.o mathFunctions.o pointInPoly.o readWriteInputFiles.o \
+    sliceFunctions.o  testfile.o v1DsubMod.o writeCVMData.o writeGridPoints.o writeLatLonData.o writeLogFiles.o
 
 OBJECTS = qmesh.o q4.o single_query.o ${PSOLVE_OBJECTS}
 
@@ -92,6 +96,36 @@ psolve.o: psolve.c psolve.h output.h quakesource.h nonlinear.h io_planes.h \
           io_checkpoint.h stiffness.h damping.h quake_util.h timers.h buildings.h meshformatlab.h drm.h topography.h       
 quakesource.o: quakesource.c quakesource.h psolve.h
 
+
+XYtoLL.o: XYtoLL.c
+BrocherCorrelations.c: BrocherCorrelations.o
+EPtomo2010subMod.c:	EPtomo2010subMod.o
+NaNsubMod.c:	NaNsubMod.o
+assignValues.c:	assignValues.o
+basinSubModels.c:	basinSubModels.o
+callRoutines.c:	callRoutines.o
+createOutputDirectories.c:	createOutputDirectories.o
+determineSurfaceDepths.c:	determineSurfaceDepths.o
+extractPartialMesh.c:	extractPartialMesh.o
+findAdjacentPoints.c:	findAdjacentPoints.o
+findSubVeloModelInd.c:	findSubVeloModelInd.o
+generateModelGrid.c:	generateModelGrid.o
+generateProfile.c:	generateProfile.o
+getSurfSubModNames.c:	getSurfSubModNames.o
+linearInterpolation.c:	linearInterpolation.o
+loadAllData.c:	loadAllData.o
+loadBasins.c:	loadBasins.o
+loadSurface.c:	loadSurface.o
+mathFunctions.c:	mathFunctions.o
+pointInPoly.c:	pointInPoly.o
+readWriteInputFiles.c:	readWriteInputFiles.o
+sliceFunctions.c:	sliceFunctions.o
+testfile.c:	testfile.o
+v1DsubMod.c:	v1DsubMod.o
+writeCVMData.c:	writeCVMData.o
+writeGridPoints.c:	writeGridPoints.o
+writeLatLonData.c:	writeLatLonData.o
+writeLogFiles.c:	writeLogFiles.o
 
 all: $(TARGET)
 
