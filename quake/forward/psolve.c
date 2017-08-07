@@ -7756,7 +7756,7 @@ int main( int argc, char** argv )
     read_parameters(argc, argv);
 
     /* Create and open database */
-    open_cvmdb();
+   // open_cvmdb();
 
     /* Initialize nonlinear parameters */
     if ( Param.includeNonlinearAnalysis == YES ) {
