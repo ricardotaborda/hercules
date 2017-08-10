@@ -911,7 +911,7 @@ topography_initparameters ( const char *parametersin ) {
     if ( ( parsetext(fp, "maximum_octant_level",    'i', &Maxoctlevel           ) != 0) ||
          ( parsetext(fp, "computation_method",      's', &fem_meth              ) != 0) ||
          ( parsetext(fp, "topographybase_zcoord",   'd', &thebase_zcoord        ) != 0) ||
-         ( parsetext(fp, "topoprahy_directory",     's', &topo_dir              ) != 0) ||
+         ( parsetext(fp, "topography_directory",    's', &topo_dir              ) != 0) ||
          ( parsetext(fp, "region_length_east_m",    'd', &L_ew                  ) != 0) ||
          ( parsetext(fp, "type_of_etree",           's', &etree_model           ) != 0) ||
          ( parsetext(fp, "region_length_north_m",   'd', &L_ns                  ) != 0) )
