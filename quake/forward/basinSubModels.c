@@ -167,7 +167,8 @@ int determineBasinSurfaceBelow(global_model_parameters *GLOBAL_MODEL_PARAMETERS,
 {
     double lowerSurf;
     int lowerSurfInd;
-    for( int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]; i++)
+    int i;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]; i++)
     {
         lowerSurf = PARTIAL_BASIN_SURFACE_DEPTHS->dep[basinNum][i];
         if((isnan(lowerSurf) == 0) && (lowerSurf <= depth))
@@ -195,7 +196,8 @@ int determineBasinSurfaceAbove(global_model_parameters *GLOBAL_MODEL_PARAMETERS,
 {
     double upperSurf;
     int upperSurfInd;
-    for( int i = GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]-1; i >= 0; i--)
+    int i;
+    for ( i = GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]-1; i >= 0; i--)
     {
         upperSurf = PARTIAL_BASIN_SURFACE_DEPTHS->dep[basinNum][i];
         if(isnan(upperSurf) == 0 && upperSurf >= depth)

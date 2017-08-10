@@ -1428,7 +1428,9 @@ global_model_parameters *getGlobalModelParameters(char *modelVersion)
     assert(GLOBAL_MODEL_PARAMETERS->nSurf==(GLOBAL_MODEL_PARAMETERS->nVeloSubMod+1));
     assert(GLOBAL_MODEL_PARAMETERS->nSurf<=(MAX_NUM_GLOBAL_SURFACES));
     assert(GLOBAL_MODEL_PARAMETERS->nBasins<=(MAX_NUM_BASINS));
-    for (int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+    
+    int i;
+    for ( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
     {
         assert(GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[i]<=(MAX_NUM_BASIN_SURFACES));
         assert(GLOBAL_MODEL_PARAMETERS->nBasinBoundaries[i] <=(MAX_NUM_BASIN_BOUNDARIES)) ;

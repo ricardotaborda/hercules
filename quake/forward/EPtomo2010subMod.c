@@ -59,7 +59,8 @@ void EPtomo2010subMod(int zInd, double dep, mesh_vector MESH_VECTOR, qualities_v
     // find the adjscent points for interpolatin from the first surface (assume all surfaces utilise the same grid)
     ADJACENT_POINTS = findGlobalAdjacentPoints(NZ_TOMOGRAPHY_DATA->surf[0][0], *MESH_VECTOR.Lat, *MESH_VECTOR.Lon);
 
-    for( int i = 0; i < 3; i++)
+    int i;
+    for( i = 0; i < 3; i++ )
     {
 //        if (i == 0)
 //        {
@@ -240,10 +241,11 @@ void loadEPtomoSurfaceData(char *tomoType, nz_tomography_data *NZ_TOMOGRAPHY_DAT
     NZ_TOMOGRAPHY_DATA->nSurf = nElev;
     assert(NZ_TOMOGRAPHY_DATA->nSurf<=MAX_NUM_TOMO_SURFACES);
     
-    for(int i = 0; i < nElev; i++)
+    int i, j;
+    for( i = 0; i < nElev; i++)
     {
         NZ_TOMOGRAPHY_DATA->surfDeps[i] = elev[i]; // depth in km
-        for(int j = 0; j < 3; j++)
+        for( j = 0; j < 3; j++)
         {
             sprintf(baseFilename,"Data/Tomography/%s/surf_tomography_%s_elev%i.in",tomoType,varNames[j],elev[i]);
             // read the surface
@@ -264,10 +266,10 @@ void freeEPtomoSurfaceData(nz_tomography_data *NZ_TOMOGRAPHY_DATA)
  n.a.
  */
 {
-    
-    for(int i = 0; i < NZ_TOMOGRAPHY_DATA->nSurf; i++)
+    int i, j;
+    for( i = 0; i < NZ_TOMOGRAPHY_DATA->nSurf; i++)
     {
-        for(int j = 0; j < 3; j++)
+        for( j = 0; j < 3; j++)
         {
             free(NZ_TOMOGRAPHY_DATA->surf[j][i]);
             

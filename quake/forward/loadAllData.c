@@ -35,7 +35,9 @@ void loadAllGlobalData(global_model_parameters *GLOBAL_MODEL_PARAMETERS,calculat
 {
     // read in sub velocity models
     printf("Loading global velocity submodel data.\n");
-    for( int i = 0; i < GLOBAL_MODEL_PARAMETERS->nVeloSubMod; i++)
+
+    int i;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nVeloSubMod; i++)
     {
         if(strcmp(GLOBAL_MODEL_PARAMETERS->veloSubMod[i], "v1DsubMod") == 0)
         {

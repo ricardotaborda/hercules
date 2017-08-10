@@ -31,7 +31,8 @@ void v1DsubMod(int zInd, double dep, qualities_vector *QUALITIES_VECTOR, velo_mo
  */
 {
     // loop over depth values and assign qualities from the sub-model
-    for(int j = 0; j < VELO_MOD_1D_DATA->nDep; j++)
+  int j;
+    for( j = 0; j < VELO_MOD_1D_DATA->nDep; j++)
     {
         if(dep >= VELO_MOD_1D_DATA->Dep[j]*-1000) // convert to meters, -ve being downwards
         {

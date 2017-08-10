@@ -36,7 +36,8 @@ void interpolateGlobalSurfaceDepths(global_surfaces *GLOBAL_SURFACES, mesh_vecto
     double p1, p2, p3, v1, v2;
     double X1, X2, Y1, Y2, Q11, Q12, Q21, Q22, X, Y;
     // loop over the number of global surfaces
-    for(int i = 0; i < GLOBAL_SURFACES->nSurf; i++)
+    int i;
+    for( i = 0; i < GLOBAL_SURFACES->nSurf; i++)
     {
         GLOBAL_SURF_READ = GLOBAL_SURFACES->surf[i];
         ADJACENT_POINTS = findGlobalAdjacentPoints(GLOBAL_SURF_READ, *MESH_VECTOR.Lat, *MESH_VECTOR.Lon);
@@ -91,7 +92,8 @@ void interpolateGlobalSurfaceDepths(global_surfaces *GLOBAL_SURFACES, mesh_vecto
     double topVal, botVal;
     
     PARTIAL_GLOBAL_SURFACE_DEPTHS->nSurfDep = GLOBAL_SURFACES->nSurf;
-    for(int i = GLOBAL_SURFACES->nSurf -1 ; i > 0; i--)
+    
+    for( i = GLOBAL_SURFACES->nSurf -1 ; i > 0; i--)
     {
         // enforce surface depths from bottom down
         

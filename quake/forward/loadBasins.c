@@ -28,7 +28,8 @@ void loadBasinData(basin_data *BASIN_DATA, global_model_parameters *GLOBAL_MODEL
  */
 {
     // loop over nBasins and load in surfaces, boundaries and sub-models
-    for( int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+  int i;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
     {
         loadAllBasinSurfaces(i, BASIN_DATA, GLOBAL_MODEL_PARAMETERS);
         loadBasinBoundaries(i, BASIN_DATA, GLOBAL_MODEL_PARAMETERS);
@@ -55,7 +56,8 @@ void loadBasinSubModelData(int basinNum, basin_data *BASIN_DATA, global_model_pa
  n.a.
  */
 {
-    for( int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]-1; i++)
+  int i;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]-1; i++)
     {
         // insert hard coded basin subvelocity model data loads here
         if(strcmp (GLOBAL_MODEL_PARAMETERS->basinSubModelNames[basinNum][i], "Cant1D_v1") == 0)
@@ -116,7 +118,9 @@ void enforceBasinSurfaceDepths(basin_data *BASIN_DATA, global_model_parameters *
 {
     // enforce basin surface depths for all points in the within the lat lon poly (ignore others)
     double topLim, botLim;
-    for( int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+    
+    int i, k;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
     {
         // assume boundary zero (0) is the largest, as boundary one (1) need be fully enclosed within this boundary
         if(IN_BASIN->inBasinLatLon[i][0] == 1)
@@ -128,7 +132,7 @@ void enforceBasinSurfaceDepths(basin_data *BASIN_DATA, global_model_parameters *
             topLim = PARTIAL_BASIN_SURFACE_DEPTHS->dep[i][0];
             botLim = PARTIAL_BASIN_SURFACE_DEPTHS->dep[i][GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[i]-1];
             
-            for(int k  = 0; k < MESH_VECTOR.nZ; k++)
+            for( k  = 0; k < MESH_VECTOR.nZ; k++)
             {
                 if(MESH_VECTOR.Z[k] > topLim)
                 {
@@ -146,7 +150,7 @@ void enforceBasinSurfaceDepths(basin_data *BASIN_DATA, global_model_parameters *
         }
         else
         {
-            for(int k  = 0; k < MESH_VECTOR.nZ; k++)
+            for( k  = 0; k < MESH_VECTOR.nZ; k++)
             {
                 IN_BASIN->inBasinDep[i][k] = 0;
             }
@@ -170,7 +174,9 @@ void enforceSurfaceDepths(global_model_parameters *GLOBAL_MODEL_PARAMETERS, part
     double topVal, botVal;
     int nanObtained = 0; // use this flag to ensure all surfaces are enforced
     int nanInd = 0;
-    for(int i = GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]-1; i > 0; i--)
+
+    int i, j;
+    for( i = GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]-1; i > 0; i--)
     {
         topVal = PARTIAL_BASIN_SURFACE_DEPTHS->dep[basinNum][i-1];
         botVal = PARTIAL_BASIN_SURFACE_DEPTHS->dep[basinNum][i];
@@ -189,7 +195,7 @@ void enforceSurfaceDepths(global_model_parameters *GLOBAL_MODEL_PARAMETERS, part
     }
     if (nanObtained == 1)
     {
-        for( int j = 0; j < nanInd-1; j++)
+        for( j = 0; j < nanInd-1; j++)
         {
             topVal = PARTIAL_BASIN_SURFACE_DEPTHS->dep[basinNum][j];
             botVal = PARTIAL_BASIN_SURFACE_DEPTHS->dep[basinNum][j+1];
@@ -222,9 +228,10 @@ void determineBasinSurfaceDepths(basin_data *BASIN_DATA, global_model_parameters
 {
     adjacent_points *ADJACENT_POINTS;
     
-    for(int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+    int i, j;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
     {
-        for(int j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[i]; j++)
+        for( j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[i]; j++)
         {
 //            printf("%i, %i\n",i,j);
 //            printf("bount num %i\n",GLOBAL_MODEL_PARAMETERS->basinBoundaryNumber[i][j]);
@@ -273,7 +280,8 @@ adjacent_points *findBasinAdjacentPoints(basin_surf_read *BASIN_SURF_READ, doubl
     int lonAssignedFlag = 0;
     ADJACENT_POINTS->inSurfaceBounds = 0;
     
-    for( int i = 0; i < BASIN_SURF_READ->nLat; i++)
+    int i;
+    for( i = 0; i < BASIN_SURF_READ->nLat; i++)
     {
         if(BASIN_SURF_READ->lati[i] >= lat)
         {
@@ -290,7 +298,7 @@ adjacent_points *findBasinAdjacentPoints(basin_surf_read *BASIN_SURF_READ, doubl
     }
     if(latAssignedFlag == 0) // to account for some surface file vectors of lat long being ascending not descending
     {
-        for(int i = BASIN_SURF_READ->nLat-1; i >= 0; i--)
+        for( i = BASIN_SURF_READ->nLat-1; i >= 0; i--)
         {
             if(BASIN_SURF_READ->lati[i] >= lat)
             {
@@ -306,7 +314,8 @@ adjacent_points *findBasinAdjacentPoints(basin_surf_read *BASIN_SURF_READ, doubl
             }
         }
     }
-    for( int j = 0; j < BASIN_SURF_READ->nLon; j++)
+    int j;
+    for( j = 0; j < BASIN_SURF_READ->nLon; j++)
     {
         if(BASIN_SURF_READ->loni[j] >= lon)
         {
@@ -322,7 +331,7 @@ adjacent_points *findBasinAdjacentPoints(basin_surf_read *BASIN_SURF_READ, doubl
     }
     if (lonAssignedFlag == 0)
     {
-        for( int j = BASIN_SURF_READ->nLon-1; j >= 0; j--)
+        for( j = BASIN_SURF_READ->nLon-1; j >= 0; j--)
         {
             if(BASIN_SURF_READ->loni[j] >= lon)
             {
@@ -368,9 +377,11 @@ void determineIfWithinBasinLatLon(basin_data *BASIN_DATA, global_model_parameter
 {
     int basinFlag = 0;
     int inPoly;
-    for( int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+
+    int i, j;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
     {
-        for( int j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinBoundaries[i]; j++)
+        for( j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinBoundaries[i]; j++)
         {
             if(Lon >= BASIN_DATA->maxLonBoundary[i][j])
             {
@@ -430,7 +441,8 @@ void loadAllBasinSurfaces(int basinNum, basin_data *BASIN_DATA, global_model_par
  n.a.
  */
 {
-    for(int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]; i++)
+  int i;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]; i++)
     {
         // load surface and transfer data into global struct
         BASIN_DATA->surf[basinNum][i] = loadBasinSurface(GLOBAL_MODEL_PARAMETERS->basinSurfaceFilenames[basinNum][i]);
@@ -450,9 +462,10 @@ void freeAllBasinSurfaces(basin_data *BASIN_DATA, global_model_parameters *GLOBA
  n.a.
  */
 {
-    for( int j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasins; j++)
+  int i, j;
+    for( j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasins; j++)
     {
-        for(int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[j]; i++)
+        for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[j]; i++)
         {
             // load surface and transfer data into global struct
             free(BASIN_DATA->surf[j][i]);
@@ -474,7 +487,8 @@ void loadBasinBoundaries(int basinNum, basin_data *BASIN_DATA, global_model_para
  n.a
  */
 {
-    for (int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinBoundaries[basinNum]; i++)
+  int i;
+    for ( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasinBoundaries[basinNum]; i++)
     {
         FILE *file;
         file = fopen(GLOBAL_MODEL_PARAMETERS->basinBoundaryFilenames[basinNum][i], "r");

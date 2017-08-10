@@ -36,7 +36,8 @@ adjacent_points *findGlobalAdjacentPoints(global_surf_read *GLOBAL_SURF_READ, do
     int lonAssignedFlag = 0;
     ADJACENT_POINTS->inSurfaceBounds = 0;
         
-    for( int i = 0; i < GLOBAL_SURF_READ->nLat; i++)
+    int i;
+    for( i = 0; i < GLOBAL_SURF_READ->nLat; i++)
     {
         if(GLOBAL_SURF_READ->lati[i] >= lat)
         {
@@ -53,7 +54,8 @@ adjacent_points *findGlobalAdjacentPoints(global_surf_read *GLOBAL_SURF_READ, do
     }
     if(latAssignedFlag == 0) // to account for some surface file vectors of lat long being ascending not descending
     {
-        for(int i = GLOBAL_SURF_READ->nLat-1; i >= 0; i--)
+      int i;
+        for( i = GLOBAL_SURF_READ->nLat-1; i >= 0; i--)
         {
             if(GLOBAL_SURF_READ->lati[i] >= lat)
             {
@@ -69,7 +71,8 @@ adjacent_points *findGlobalAdjacentPoints(global_surf_read *GLOBAL_SURF_READ, do
             }
         }
     }
-    for( int j = 0; j < GLOBAL_SURF_READ->nLon; j++)
+    int j;
+    for( j = 0; j < GLOBAL_SURF_READ->nLon; j++)
     {
         if(GLOBAL_SURF_READ->loni[j] >= lon)
         {
@@ -85,7 +88,8 @@ adjacent_points *findGlobalAdjacentPoints(global_surf_read *GLOBAL_SURF_READ, do
     }
     if (lonAssignedFlag == 0)
     {
-        for( int j = GLOBAL_SURF_READ->nLon-1; j >= 0; j--)
+        int j;
+        for( j = GLOBAL_SURF_READ->nLon-1; j >= 0; j--)
         {
             if(GLOBAL_SURF_READ->loni[j] >= lon)
             {

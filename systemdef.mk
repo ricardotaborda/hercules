@@ -23,14 +23,25 @@ ifeq ($(SYSTEM), XT5)
         CC      = cc
         CXX     = CC
         LD      = CC
+	ifdef USE_GSL
+            CC  += -I${GSL_INCLUDE_PATH}
+	endif
         CFLAGS  += -DBIGBEN 
         LDFLAGS += -Wl,-zmuldefs
         ifdef IOBUF_INC
             CPPFLAGS += -I${IOBUF_INC}
         endif        
         CPPFLAGS    += -D_USE_FILE_OFFSET64 -D_FILE_OFFSET_BITS=64 -D_USE_LARGEFILE64       
-        
+        ifdef USE_GSL
+            LDFLAGS += -L${GSL_LIBRARY_PATH}
+	    LDFLAGS += -lgsl -lgslcblas
+	endif
 endif
+
+#            CXX += -I${GSL_INCLUDE_PATH}
+#            LD  += -I${GSL_INCLUDE_PATH}
+
+#            CPPFLAGS += -L${GSL_LIBRARY_PATH}
 
 
 ifeq ($(SYSTEM), BGW)

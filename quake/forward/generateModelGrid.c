@@ -74,19 +74,20 @@ void generateFullModelGridGreatCircle(model_extent *MODEL_EXTENT, global_mesh *G
         exit(EXIT_FAILURE);
     }
     
-    for(int i = 0; i < GLOBAL_MESH->nX; i++)
+    int i;
+    for( i = 0; i < GLOBAL_MESH->nX; i++)
     {
         GLOBAL_MESH->X[i] = 0.5*MODEL_EXTENT->hLatLon+MODEL_EXTENT->hLatLon*(i)-0.5*MODEL_EXTENT->Xmax;
 //        GLOBAL_MESH->X[i] = MODEL_EXTENT->hLatLon*(i);
     }
     
-    for(int i = 0; i < GLOBAL_MESH->nY; i++)
+    for( i = 0; i < GLOBAL_MESH->nY; i++)
     {
         GLOBAL_MESH->Y[i] = 0.5*MODEL_EXTENT->hLatLon+MODEL_EXTENT->hLatLon*(i)-0.5*MODEL_EXTENT->Ymax;
 //        GLOBAL_MESH->Y[i] = MODEL_EXTENT->hLatLon*(i);
     }
     
-    for(int i = 0; i < GLOBAL_MESH->nZ; i++)
+    for( i = 0; i < GLOBAL_MESH->nZ; i++)
     {
         GLOBAL_MESH->Z[i] = -1000*(MODEL_EXTENT->Zmin + MODEL_EXTENT->hDep*(i+0.5));
     }
@@ -153,9 +154,10 @@ void generateFullModelGridGreatCircle(model_extent *MODEL_EXTENT, global_mesh *G
     double b0 = 0.0;//0.5*(MODEL_EXTENT->Xmax - MODEL_EXTENT->hLatLon)/ERAD;
     
     double x, y;
-    for(int iy = 0; iy < GLOBAL_MESH->nY; iy++)
+    int iy, ix;
+    for( iy = 0; iy < GLOBAL_MESH->nY; iy++)
     {
-        for(int ix = 0; ix < GLOBAL_MESH->nX; ix++)
+        for( ix = 0; ix < GLOBAL_MESH->nX; ix++)
         {
             
             x = GLOBAL_MESH->X[ix];
@@ -221,19 +223,20 @@ void generateFullModelGridPointRad(model_extent *MODEL_EXTENT, global_mesh *GLOB
 	double X[LON_GRID_DIM_MAX], Y[LAT_GRID_DIM_MAX], Z[DEP_GRID_DIM_MAX];
     
     // loop over x y z arrays to insert values
-	for(int i = 0; i < nX; i++)
+	int i;
+	for( i = 0; i < nX; i++)
 	{
 		X[i] = -1*MODEL_EXTENT->Xmax + MODEL_EXTENT->hLatLon*(i+0.5);
         GLOBAL_MESH->X[i] = X[i];
 	}
     
-    for(int i = 0; i < nY; i++)
+    for( i = 0; i < nY; i++)
 	{
 		Y[i] = -1*MODEL_EXTENT->Ymax + MODEL_EXTENT->hLatLon*(i+0.5);
         GLOBAL_MESH->Y[i] = Y[i];
 	}
     
-    for(int i = 0; i < nZ; i++)
+    for( i = 0; i < nZ; i++)
 	{
 		Z[i] = MODEL_EXTENT->Zmin + MODEL_EXTENT->hDep*(i+0.5);
 	}
@@ -241,9 +244,11 @@ void generateFullModelGridPointRad(model_extent *MODEL_EXTENT, global_mesh *GLOB
     double locationXY[2];
     // calculate and insert values into struct
     singleGridPoint points;
-    for(int ix = 0; ix < nX; ix++) //nX
+
+    int ix, iy;
+    for( ix = 0; ix < nX; ix++) //nX
     {
-        for(int iy = 0; iy < nY; iy++) //xY
+        for( iy = 0; iy < nY; iy++) //xY
         {
             locationXY[0] = X[ix];
             locationXY[1] = Y[iy];
@@ -271,7 +276,8 @@ void generateFullModelGridPointRad(model_extent *MODEL_EXTENT, global_mesh *GLOB
         }
     }
     
-    for(int iz = 0; iz < nZ; iz++)
+    int iz;
+    for( iz = 0; iz < nZ; iz++)
     {
         GLOBAL_MESH->Z[iz] = -1000*Z[iz]; // convert to m (below ground is negative)
     }

@@ -41,7 +41,8 @@ partial_global_mesh *generateSlicePartialMesh(individual_slice_parameters INDIVI
     deltaLat = (INDIVIDUAL_SLICE_PARAMETERS.latPtsSlice[0]-INDIVIDUAL_SLICE_PARAMETERS.latPtsSlice[1])/nGrdPts;
     deltaLon = (INDIVIDUAL_SLICE_PARAMETERS.lonPtsSlice[0]-INDIVIDUAL_SLICE_PARAMETERS.lonPtsSlice[1])/nGrdPts;
     
-    for(int j = 0; j < nGrdPts+1; j++)
+    int j;
+    for( j = 0; j < nGrdPts+1; j++)
     {
         PARTIAL_GLOBAL_MESH->Lat[count] = INDIVIDUAL_SLICE_PARAMETERS.latPtsSlice[0]-j*deltaLat;
         PARTIAL_GLOBAL_MESH->Lon[count] = INDIVIDUAL_SLICE_PARAMETERS.lonPtsSlice[0]-j*deltaLon;
@@ -140,7 +141,8 @@ mesh_vector *extractMeshVector(partial_global_mesh *PARTIAL_GLOBAL_MESH, int lon
     MESH_VECTOR->Lat = &PARTIAL_GLOBAL_MESH->Lat[lonInd];
     MESH_VECTOR->Lon = &PARTIAL_GLOBAL_MESH->Lon[lonInd];
     
-    for(int i = 0; i < PARTIAL_GLOBAL_MESH->nZ; i++)
+    int i;
+    for( i = 0; i < PARTIAL_GLOBAL_MESH->nZ; i++)
     {
         MESH_VECTOR->Z[i] = PARTIAL_GLOBAL_MESH->Z[i];
     }
@@ -173,9 +175,11 @@ mesh_vector *extendMeshVector(partial_global_mesh *PARTIAL_GLOBAL_MESH, int nPts
     
     int count = 0;
     double half = 0.9999*1.0/2.0;
-    for(int i = 0; i < PARTIAL_GLOBAL_MESH->nZ; i++)
+    
+    int i, j;
+    for( i = 0; i < PARTIAL_GLOBAL_MESH->nZ; i++)
     {
-        for (int j = 0; j < nPtsSmooth; j ++)
+        for ( j = 0; j < nPtsSmooth; j ++)
         {
             count = i*nPtsSmooth + j;
             if(count == 0)

@@ -97,10 +97,12 @@ void writeGlobalQualities(char *OUTPUT_DIR, partial_global_mesh *PARTIAL_GLOBAL_
     vp = (float*) malloc(bsize);
     vs = (float*) malloc(bsize);
     rho = (float*) malloc(bsize);
-    
-    for(int iz = 0; iz < PARTIAL_GLOBAL_MESH->nZ; iz++)
+
+    int ix, iz;
+
+    for( iz = 0; iz < PARTIAL_GLOBAL_MESH->nZ; iz++)
     {
-        for (int ix = 0; ix < PARTIAL_GLOBAL_MESH->nX; ix++)
+        for ( ix = 0; ix < PARTIAL_GLOBAL_MESH->nX; ix++)
         {
             //				ip = ix + iz * PARTIAL_GLOBAL_MESH->nX;  //index counter
             if (PARTIAL_GLOBAL_QUALITIES->Vs[ix][iz] <= GEN_EXTRACT_VELO_MOD_CALL.MIN_VS) // enforce min Vs
@@ -170,8 +172,8 @@ void writeIndividualProfile(qualities_vector *QUALITIES_VECTOR, gen_profile_call
     fprintf(fp,"Properties at Lat: %lf Lon: %lf\n",*MESH_VECTOR->Lat, *MESH_VECTOR->Lon);
     fprintf(fp,"Depth (km) \t Vp (km/s) \t Vs (km/s) \t Rho (t/m^3)\n");
     
-    
-    for(int i = 0; i < MESH_VECTOR->nZ; i++)
+    int i;
+    for( i = 0; i < MESH_VECTOR->nZ; i++)
     {
         if(QUALITIES_VECTOR->Vs[i] <= GEN_PROFILE_CALL.PROFILE_MIN_VS)
         {
@@ -198,8 +200,8 @@ void writeMultipleProfiles(qualities_vector *QUALITIES_VECTOR, gen_multi_profile
     fprintf(fp,"Properties at Lat: %lf Lon: %lf\n",*MESH_VECTOR->Lat, *MESH_VECTOR->Lon);
     fprintf(fp,"Depth (km) \t Vp (km/s) \t Vs (km/s) \t Rho (t/m^3)\n");
 
-
-    for(int i = 0; i < MESH_VECTOR->nZ; i++)
+    int i;
+    for( i = 0; i < MESH_VECTOR->nZ; i++)
     {
         if(QUALITIES_VECTOR->Vs[i] <= GEN_MULTI_PROFILES_CALL.PROFILE_MIN_VS)
         {
@@ -229,19 +231,20 @@ void writeMultipleProfileSurfaceDepths(global_model_parameters *GLOBAL_MODEL_PAR
     fprintf(fp,"Global surfaces\n");
     fprintf(fp,"Surface_name \t Depth (m)\n");
 
-    for ( int i = 0 ; i < GLOBAL_MODEL_PARAMETERS->nSurf; i++)
+    int i, j;
+    for ( i = 0 ; i < GLOBAL_MODEL_PARAMETERS->nSurf; i++)
     {
         fprintf(fp,"%s\t%lf\n",GLOBAL_MODEL_PARAMETERS->surf[i],PARTIAL_GLOBAL_SURFACE_DEPTHS->dep[i]);
     }
 
     fprintf(fp,"\nBasin surfaces (if applicable)\n");
 
-    for ( int i = 0 ; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+    for ( i = 0 ; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
     {
         if(IN_BASIN->inBasinLatLon[i][0])
         {
             fprintf(fp,"\n%s\n",GLOBAL_MODEL_PARAMETERS->basin[i]);
-            for(int j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[i]; j++)
+            for( j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[i]; j++)
             {
                 fprintf(fp,"%s\t%lf\n",GLOBAL_MODEL_PARAMETERS->basinSurfaceNames[i][j],PARTIAL_BASIN_SURFACE_DEPTHS->dep[i][j]);
             }
@@ -268,19 +271,21 @@ void writeProfileSurfaceDepths(global_model_parameters *GLOBAL_MODEL_PARAMETERS,
     fprintf(fp,"Global surfaces\n");
     fprintf(fp,"Surface_name \t Depth (m)\n");
     
-    for ( int i = 0 ; i < GLOBAL_MODEL_PARAMETERS->nSurf; i++)
+    int i, j;
+
+    for ( i = 0 ; i < GLOBAL_MODEL_PARAMETERS->nSurf; i++)
     {
         fprintf(fp,"%s\t%lf\n",GLOBAL_MODEL_PARAMETERS->surf[i],PARTIAL_GLOBAL_SURFACE_DEPTHS->dep[i]);
     }
     
     fprintf(fp,"\nBasin surfaces (if applicable)\n");
 
-    for ( int i = 0 ; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+    for ( i = 0 ; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
     {
         if(IN_BASIN->inBasinLatLon[i][0])
         {
             fprintf(fp,"\n%s\n",GLOBAL_MODEL_PARAMETERS->basin[i]);
-            for(int j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[i]; j++)
+            for( j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[i]; j++)
             {
                 fprintf(fp,"%s\t%lf\n",GLOBAL_MODEL_PARAMETERS->basinSurfaceNames[i][j],PARTIAL_BASIN_SURFACE_DEPTHS->dep[i][j]);
             }
@@ -294,7 +299,8 @@ void writeProfileSurfaceDepths(global_model_parameters *GLOBAL_MODEL_PARAMETERS,
 
 void writeSliceSurfaceDepths(global_model_parameters *GLOBAL_MODEL_PARAMETERS,partial_global_mesh *PARTIAL_GLOBAL_MESH, char *OUTPUT_DIR, slice_surface_depths *SLICE_SURFACE_DEPTHS)
 {
-    for( int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+  int i;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
     {
         writeAllBasinSurfaceDepths(GLOBAL_MODEL_PARAMETERS, PARTIAL_GLOBAL_MESH, i, OUTPUT_DIR, SLICE_SURFACE_DEPTHS);
     }
@@ -318,15 +324,18 @@ void writeAllBasinSurfaceDepths(global_model_parameters *GLOBAL_MODEL_PARAMETERS
     sprintf(fName,"%s/SliceSurfaceDepthsBasin#%iSlice#%i.txt",sliceDir,basinNum,sliceCount);
     fp = fopen(fName, "w");
     fprintf(fp, "Lat\tLon\t");
-    for(int k = 0; k < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]; k++)
+
+    int i, j, k;
+
+    for( k = 0; k < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]; k++)
     {
         fprintf(fp, "%s\t", GLOBAL_MODEL_PARAMETERS->basinSurfaceNames[basinNum][k]);
     }
     fprintf(fp, "\n");
-    for (int i = 0; i < PARTIAL_GLOBAL_MESH->nX; i++)
+    for ( i = 0; i < PARTIAL_GLOBAL_MESH->nX; i++)
     {
         fprintf(fp, "%lf\t%lf\t", PARTIAL_GLOBAL_MESH->Lat[i],PARTIAL_GLOBAL_MESH->Lon[i]);
-        for (int j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]; j++)
+        for ( j = 0; j < GLOBAL_MODEL_PARAMETERS->nBasinSurfaces[basinNum]; j++)
         {
             fprintf(fp, "%lf\t", SLICE_SURFACE_DEPTHS->basinSurfdep[basinNum][j][i]);
         }
@@ -350,15 +359,18 @@ void writeAllGlobalSurfaceDepths(slice_surface_depths *SLICE_SURFACE_DEPTHS, par
     sprintf(fName,"%s/SliceSurfaceDepthsGlobal%i.txt",sliceDir,sCount);
     fp = fopen(fName, "w");
     fprintf(fp, "Lat\tLon\t");
-    for(int k = 0; k < GLOBAL_MODEL_PARAMETERS->nSurf; k++)
+
+    int i, j, k;
+
+    for( k = 0; k < GLOBAL_MODEL_PARAMETERS->nSurf; k++)
     {
         fprintf(fp, "%s\t", GLOBAL_MODEL_PARAMETERS->surf[k]);
     }
     fprintf(fp, "\n");
-    for (int i = 0; i < PARTIAL_GLOBAL_MESH->nX; i++)
+    for ( i = 0; i < PARTIAL_GLOBAL_MESH->nX; i++)
     {
         fprintf(fp, "%lf\t%lf\t", PARTIAL_GLOBAL_MESH->Lat[i],PARTIAL_GLOBAL_MESH->Lon[i]);
-        for (int j = 0; j < GLOBAL_MODEL_PARAMETERS->nSurf; j++)
+        for ( j = 0; j < GLOBAL_MODEL_PARAMETERS->nSurf; j++)
         {
             fprintf(fp, "%lf\t",SLICE_SURFACE_DEPTHS->globSurfdep[j][i]);
         }

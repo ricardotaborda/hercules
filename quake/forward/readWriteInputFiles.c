@@ -355,7 +355,8 @@ multi_profile_parameters *readProfilesTextFile(char *coordsTextFile)
         exit(EXIT_FAILURE);
     }
 
-    for(int i = 0; i < MULTI_PROFILE_PARAMETERS->nProfiles; i++)
+    int i;
+    for( i = 0; i < MULTI_PROFILE_PARAMETERS->nProfiles; i++)
     {
         fscanf(file, "%lf %lf", &MULTI_PROFILE_PARAMETERS->lats[i], &MULTI_PROFILE_PARAMETERS->lons[i]);
     }
@@ -462,7 +463,8 @@ variable_depth_points *readDepthPointsTextFile(char *depthsTextFile)
         exit(EXIT_FAILURE);
     }
 
-    for(int i = 0; i < VARIABLE_DEPTH_POINTS->nDep; i++)
+    int i;
+    for( i = 0; i < VARIABLE_DEPTH_POINTS->nDep; i++)
     {
         fscanf(file, "%lf", &VARIABLE_DEPTH_POINTS->dep[i]);
     }

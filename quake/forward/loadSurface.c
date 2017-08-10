@@ -50,23 +50,25 @@ global_surf_read *loadGlobalSurface(char *fileName)
 //    printf("%i.\n",GLOBAL_SURF_IN_DIM_MAX);
     assert(nLat<=GLOBAL_SURF_IN_DIM_MAX);
     assert(nLon<=GLOBAL_SURF_IN_DIM_MAX);
-    
+
+    int i, j;
+
     // read lat values
-    for(int i = 0; i < nLat; i++)
+    for( i = 0; i < nLat; i++)
     {
         fscanf(file, "%lf",&GLOBAL_SURF_READ->lati[i]);
     }
     
     // read lon values
-    for(int i = 0; i < nLon; i++)
+    for( i = 0; i < nLon; i++)
     {
         fscanf(file, "%lf",&GLOBAL_SURF_READ->loni[i]);
     }
     
     // read in the surface raster data
-    for(int i = 0; i < nLat; i++)
+    for( i = 0; i < nLat; i++)
     {
-        for(int j = 0; j < nLon; j++)
+        for( j = 0; j < nLon; j++)
         {
             fscanf(file, "%lf",&GLOBAL_SURF_READ->raster[j][i]);
         }
@@ -150,22 +152,24 @@ basin_surf_read *loadBasinSurface(char *fileName)
     assert(nLat<=BASIN_SURF_IN_DIM_MAX);
     assert(nLon<=BASIN_SURF_IN_DIM_MAX);
     
+    int i, j;
+
     // read lat values
-    for(int i = 0; i < nLat; i++)
+    for( i = 0; i < nLat; i++)
     {
         fscanf(file, "%lf",&BASIN_SURF_READ->lati[i]);
     }
     
     // read lon values
-    for(int i = 0; i < nLon; i++)
+    for( i = 0; i < nLon; i++)
     {
         fscanf(file, "%lf",&BASIN_SURF_READ->loni[i]);
     }
     
     // read in the surface raster data
-    for(int i = 0; i < nLat; i++)
+    for( i = 0; i < nLat; i++)
     {
-        for(int j = 0; j < nLon; j++)
+        for( j = 0; j < nLon; j++)
         {
             fscanf(file, "%lf",&BASIN_SURF_READ->raster[j][i]);
         }
@@ -229,7 +233,8 @@ void loadGlobalSurfaceData(global_surfaces *GLOBAL_SURFACES, global_model_parame
     // place global surfaces into struct
     GLOBAL_SURFACES->nSurf = GLOBAL_MODEL_PARAMETERS->nSurf;
     
-    for(int i = 0; i < GLOBAL_MODEL_PARAMETERS->nSurf; i++)
+    int i;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nSurf; i++)
     {
         // load surface and transfer data into global struct
         GLOBAL_SURFACES->surf[i] = loadGlobalSurface(GLOBAL_MODEL_PARAMETERS->globalSurfFilenames[i]);
@@ -251,7 +256,8 @@ void freeGlobalSurfaceData(global_surfaces *GLOBAL_SURFACES, global_model_parame
     // place global surfaces into struct
     GLOBAL_SURFACES->nSurf = GLOBAL_MODEL_PARAMETERS->nSurf;
     
-    for(int i = 0; i < GLOBAL_MODEL_PARAMETERS->nSurf; i++)
+    int i;
+    for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nSurf; i++)
     {
         // free the global surfaces
         free (GLOBAL_SURFACES->surf[i]);

@@ -57,7 +57,8 @@ void assignQualities(global_model_parameters *GLOBAL_MODEL_PARAMETERS, velo_mod_
         SHIFTED_MESH_VECTOR.Lon = MESH_VECTOR.Lon;
         SHIFTED_MESH_VECTOR.nZ = MESH_VECTOR.nZ;
 
-        for (int k = 0; k < MESH_VECTOR.nZ; k++)
+	int k;
+        for (k = 0; k < MESH_VECTOR.nZ; k++)
         {
             depthChange = - MESH_VECTOR.Z[k];
             SHIFTED_MESH_VECTOR.Z[k] = PARTIAL_GLOBAL_SURFACE_DEPTHS->dep[1] - depthChange;
@@ -83,7 +84,9 @@ void assignQualities(global_model_parameters *GLOBAL_MODEL_PARAMETERS, velo_mod_
         SHIFTED_MESH_VECTOR.Lat = MESH_VECTOR.Lat;
         SHIFTED_MESH_VECTOR.Lon = MESH_VECTOR.Lon;
         SHIFTED_MESH_VECTOR.nZ = MESH_VECTOR.nZ;
-        for (int k = 0; k < MESH_VECTOR.nZ; k++)
+        
+	int k;
+	for ( k = 0; k < MESH_VECTOR.nZ; k++)
         {
             depthChange = - MESH_VECTOR.Z[k];
             if(depthChange == 0)
@@ -117,7 +120,8 @@ void assignQualities(global_model_parameters *GLOBAL_MODEL_PARAMETERS, velo_mod_
     int basinFlag = 0;
     double Z = 0;
 
-    for (int k = 0; k < MESH_VECTOR.nZ; k++)
+    int k;
+    for ( k = 0; k < MESH_VECTOR.nZ; k++)
     {
         if(strcmp(TOPO_TYPE, "BULLDOZED") == 0)
         {
@@ -137,7 +141,8 @@ void assignQualities(global_model_parameters *GLOBAL_MODEL_PARAMETERS, velo_mod_
             Z = SHIFTED_MESH_VECTOR.Z[k];
         }
 
-        for(int i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
+	int i;
+        for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nBasins; i++)
         {
             if (IN_BASIN->inBasinDep[i][k] == 1)
             {
@@ -188,7 +193,8 @@ void assignQualities(global_model_parameters *GLOBAL_MODEL_PARAMETERS, velo_mod_
     }
     if(strcmp(TOPO_TYPE, "BULLDOZED") == 0)
     {
-        for (int k = 0; k < MESH_VECTOR.nZ; k++) // write over values if BULLDOZED
+      int k;
+        for ( k = 0; k < MESH_VECTOR.nZ; k++) // write over values if BULLDOZED
         {
             if (MESH_VECTOR.Z[k] > 0)
             {

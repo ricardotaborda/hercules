@@ -303,8 +303,9 @@ int endian(void)
 
 double findMaxValueArray(int nPts, double pts[5])
 {
+  int i;
     double max = -1e6;
-    for(int i = 0; i < nPts; i++)
+    for( i = 0; i < nPts; i++)
     {
         if (max < pts[i])
         {
@@ -316,8 +317,9 @@ double findMaxValueArray(int nPts, double pts[5])
 
 double findMinValueArray(int nPts, double pts[5])
 {
+  int i;
     double min = 1e6;
-    for(int i = 0; i < nPts; i++)
+    for( i = 0; i < nPts; i++)
     {
         if (min > pts[i])
         {
@@ -330,9 +332,9 @@ double findMinValueArray(int nPts, double pts[5])
 
 double interpolateQuad(double lons[4], double lats[4], double values[4], double lonA, double latA)
 {
-    
+  int i, k;
     printf("%lf %lf\n", lonA,latA);
-    for (int k = 0; k < 4; k++)
+    for ( k = 0; k < 4; k++)
     {
         printf("%lf %lf %lf\n", lons[k], lats[k],values[k]);
     }
@@ -351,7 +353,7 @@ double interpolateQuad(double lons[4], double lats[4], double values[4], double 
     double a[4] = {0};
     double b[4] = {0};
     
-    for (int i = 0 ; i < 4; i++)
+    for ( i = 0 ; i < 4; i++)
     {
         
         a[0] += AI0[i]*lons[i];
@@ -531,13 +533,13 @@ void calcAndSaveVs(char *OUTPUT_DIR, partial_global_mesh *PARTIAL_GLOBAL_MESH, p
     double Vs;
     double VsTotal;
     double dZ = PARTIAL_GLOBAL_MESH->Z[0] - PARTIAL_GLOBAL_MESH->Z[1];
+    int i, j;
     
-    
-    for( int i = 0; i < PARTIAL_GLOBAL_MESH->nX; i++)
+    for( i = 0; i < PARTIAL_GLOBAL_MESH->nX; i++)
     {
         Vs = 0;
         //        printf("%i.\n",PARTIAL_GLOBAL_MESH->nZ-1);
-        for (int j = 0; j < PARTIAL_GLOBAL_MESH->nZ; j++)
+        for ( j = 0; j < PARTIAL_GLOBAL_MESH->nZ; j++)
         {
             Vs += dZ/PARTIAL_GLOBAL_QUALITIES->Vs[i][j];
         }

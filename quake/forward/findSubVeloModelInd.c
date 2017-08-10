@@ -29,7 +29,8 @@ int findGlobalSubVeloModelInd(double depth, partial_global_surface_depths *PARTI
 {
     int nVeloInd = 1e6; // large value, sub model inds should be <10
     
-    for(int j = 0; j < PARTIAL_GLOBAL_SURFACE_DEPTHS->nSurfDep-1; j++)
+    int j;
+    for( j = 0; j < PARTIAL_GLOBAL_SURFACE_DEPTHS->nSurfDep-1; j++)
     {
         if((depth <= PARTIAL_GLOBAL_SURFACE_DEPTHS->dep[j]) && (depth > PARTIAL_GLOBAL_SURFACE_DEPTHS->dep[j+1]))
         {

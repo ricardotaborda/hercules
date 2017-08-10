@@ -33,8 +33,9 @@ void extractSlicesFromBinaryFiles(char *OUTPUT_DIR, gen_extract_velo_mod_call GE
     }
     GLOBAL_DATA_FOR_INTERPOLATION->nPts = 0;
     
+    int i;
     // obtain lat-lon points
-    for( int i = 0; i < SLICE_PARAMETERS->nSlices; i++)
+    for( i = 0; i < SLICE_PARAMETERS->nSlices; i++)
     {
         GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_PARAMETERS[i] = malloc(sizeof(individual_slice_parameters));
         if (GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_PARAMETERS[i] == NULL)
@@ -70,7 +71,7 @@ void extractSlicesFromBinaryFiles(char *OUTPUT_DIR, gen_extract_velo_mod_call GE
     printf("Completed read of binary files for interpolation.\n");
     
     // interpolate
-    for( int i = 0; i < SLICE_PARAMETERS->nSlices; i++)
+    for( i = 0; i < SLICE_PARAMETERS->nSlices; i++)
     {
         interpolateIndividualSlice(GLOBAL_MESH, GLOBAL_DATA_FOR_INTERPOLATION, i);
         
@@ -80,8 +81,9 @@ void extractSlicesFromBinaryFiles(char *OUTPUT_DIR, gen_extract_velo_mod_call GE
     writeSliceParametersLogFile(OUTPUT_DIR, SLICE_PARAMETERS, MODEL_EXTENT, GLOBAL_MESH, CALCULATION_LOG, "EXTRACTED");
     printf("Completed write of slice parameters log file.\n");
     
+    int j;
     // free data
-    for (int j = 0; j < SLICE_PARAMETERS->nSlices; j++)
+    for ( j = 0; j < SLICE_PARAMETERS->nSlices; j++)
     {
         free(GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_PARAMETERS[j]);
         free(GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[j]);
@@ -117,7 +119,8 @@ slice_parameters *readExtractedSliceParametersFile(char *sliceParametersTextFile
         exit(EXIT_FAILURE);
     }
     
-    for(int i = 0; i < SLICE_PARAMETERS->nSlices; i++)
+    int i;
+    for( i = 0; i < SLICE_PARAMETERS->nSlices; i++)
     {
         fscanf(file, "%lf %lf %lf %lf %lf", &SLICE_PARAMETERS->latA[i], &SLICE_PARAMETERS->latB[i], &SLICE_PARAMETERS->lonA[i], &SLICE_PARAMETERS->lonB[i], &SLICE_PARAMETERS->LatLonRes[i]);
     }
@@ -151,7 +154,8 @@ slice_parameters *readGeneratedSliceParametersFile(char *sliceParametersTextFile
         exit(EXIT_FAILURE);
     }
     
-    for(int i = 0; i < SLICE_PARAMETERS->nSlices; i++)
+    int i;
+    for( i = 0; i < SLICE_PARAMETERS->nSlices; i++)
     {
         fscanf(file, "%lf %lf %lf %lf %lf %lf %lf %lf", &SLICE_PARAMETERS->latA[i], &SLICE_PARAMETERS->latB[i], &SLICE_PARAMETERS->lonA[i], &SLICE_PARAMETERS->lonB[i], &SLICE_PARAMETERS->depMin[i], &SLICE_PARAMETERS->depMax[i], &SLICE_PARAMETERS->LatLonRes[i], &SLICE_PARAMETERS->DepRes[i]);
     }
@@ -173,11 +177,12 @@ void interpolateIndividualSlice(global_mesh *GLOBAL_MESH, global_data_for_interp
     double lon1, lon2, lon3, lon4;
     double interpVals[4];
     
-    for(int i = 0; i < GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->nPts; i++)
+    int i, k;
+    for( i = 0; i < GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->nPts; i++)
     {
         if(isnan(GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->latInds[4*i])== 1)
         {
-            for(int k = 0; k < GLOBAL_MESH->nZ; k++)
+            for( k = 0; k < GLOBAL_MESH->nZ; k++)
             {
                 GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->Vp[i][k] = NAN;
                 GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->Vs[i][k] = NAN;
@@ -217,7 +222,7 @@ void interpolateIndividualSlice(global_mesh *GLOBAL_MESH, global_data_for_interp
 //            printf("%lf %lf %lf %lf\n",lon1,lon2,lon3,lon4);
 
             
-            for(int k = 0; k < GLOBAL_MESH->nZ; k++)
+            for( k = 0; k < GLOBAL_MESH->nZ; k++)
             {
                 // Vs
                 interpVals[0] = GLOBAL_DATA_FOR_INTERPOLATION->Vs[matchingInd1][k];
@@ -280,9 +285,11 @@ void writeInterpolatedSlice(char *OUTPUT_DIR, global_data_for_interpolation *GLO
     fprintf(fp2,"LonA:\t%lf\n",GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->lonPts[0]);
     fprintf(fp2,"LonB:\t%lf\n",GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->lonPts[GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->nPts-1]);
     fprintf(fp2,"Lat \t Lon \t Depth \t Vp \t Vs \t Rho\n");
-    for(int i = 0; i < GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->nPts; i++)
+
+    int i, m;
+    for( i = 0; i < GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->nPts; i++)
     {
-        for(int m = 0; m < GLOBAL_MESH->nZ; m++)
+        for( m = 0; m < GLOBAL_MESH->nZ; m++)
         {
             currVp = GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->Vp[i][m];
             currRho = GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->Rho[i][m];
@@ -322,9 +329,11 @@ void writeGeneratedSlice(char *OUTPUT_DIR, partial_global_mesh *PARTIAL_GLOBAL_M
     fprintf(fp2,"LonA:\t%lf\n",INDIVIDUAL_SLICE_PARAMETERS->lonPtsSlice[0]);
     fprintf(fp2,"LonB:\t%lf\n",INDIVIDUAL_SLICE_PARAMETERS->lonPtsSlice[1]);
     fprintf(fp2,"Lat \t Lon \t Depth \t Vp \t Vs \t Rho\n");
-    for(int ix = 0; ix < PARTIAL_GLOBAL_MESH->nX; ix++)
+
+    int ix, iz;
+    for( ix = 0; ix < PARTIAL_GLOBAL_MESH->nX; ix++)
     {
-        for(int iz = 0; iz < PARTIAL_GLOBAL_MESH->nZ; iz++)
+        for( iz = 0; iz < PARTIAL_GLOBAL_MESH->nZ; iz++)
         {
             vsTemp = PARTIAL_GLOBAL_QUALITIES->Vs[ix][iz]; // else assign from global structure
             vpTemp = PARTIAL_GLOBAL_QUALITIES->Vp[ix][iz];
@@ -384,11 +393,11 @@ void readGlobalDataPointsForInterpolation(char *OUTPUT_DIR, global_data_for_inte
         exit(EXIT_FAILURE);
     }
     
+    int i, j;
     
-    
-    for(int i = 0; i < GLOBAL_MESH->nY; i++)
+    for( i = 0; i < GLOBAL_MESH->nY; i++)
     {
-        for(int j = 0; j < GLOBAL_MESH->nX; j++)
+        for( j = 0; j < GLOBAL_MESH->nX; j++)
         {
             
             READ_FLAGS->xyReqFlag[j][i] = 0;
@@ -396,8 +405,9 @@ void readGlobalDataPointsForInterpolation(char *OUTPUT_DIR, global_data_for_inte
         }
     }
     
+    int ix, iy, iz;
     printf("Reading binary files.\n");
-    for(int iy = 0; iy < GLOBAL_MESH->nY; iy++)
+    for( iy = 0; iy < GLOBAL_MESH->nY; iy++)
     {
         //increment a counter
         printf("\rReading velocity model from file %d%% complete.", iy*100/GLOBAL_MESH->nY);
@@ -410,9 +420,9 @@ void readGlobalDataPointsForInterpolation(char *OUTPUT_DIR, global_data_for_inte
         inYArray = isValueInArray(iy, GLOBAL_DATA_FOR_INTERPOLATION->sortedLatInds, GLOBAL_DATA_FOR_INTERPOLATION->sortedNPts);
         if(inYArray == 1)
         {
-            for(int iz = 0; iz < GLOBAL_MESH->nZ; iz++)
+            for( iz = 0; iz < GLOBAL_MESH->nZ; iz++)
             {
-                for (int ix = 0; ix < GLOBAL_MESH->nX; ix++)
+                for ( ix = 0; ix < GLOBAL_MESH->nX; ix++)
                 {
                     if( READ_FLAGS->xyReqFlag[ix][iy] == 0 )
                     {
@@ -496,9 +506,11 @@ void globalIndReduction(global_data_for_interpolation *GLOBAL_DATA_FOR_INTERPOLA
     // first sort by latitudes
     int temp;
     int changePassFlag = 0;
-    for(int i = 0; i < GLOBAL_DATA_FOR_INTERPOLATION->nPts; i++)
+    int i, j, k;
+
+    for( i = 0; i < GLOBAL_DATA_FOR_INTERPOLATION->nPts; i++)
     {
-        for(int j = 0; j < GLOBAL_DATA_FOR_INTERPOLATION->nPts -1; j++)
+        for( j = 0; j < GLOBAL_DATA_FOR_INTERPOLATION->nPts -1; j++)
         {
             if(GLOBAL_DATA_FOR_INTERPOLATION->requiredLatInds[j]>GLOBAL_DATA_FOR_INTERPOLATION->requiredLatInds[j+1])
             {
@@ -524,7 +536,7 @@ void globalIndReduction(global_data_for_interpolation *GLOBAL_DATA_FOR_INTERPOLA
     int nLon;
     GLOBAL_DATA_FOR_INTERPOLATION->requiredLatInds[GLOBAL_DATA_FOR_INTERPOLATION->nPts] = -1; // ensures that this indice is not used
     GLOBAL_DATA_FOR_INTERPOLATION->requiredLonInds[GLOBAL_DATA_FOR_INTERPOLATION->nPts] = -1;
-    for(int i = 1; i <= GLOBAL_DATA_FOR_INTERPOLATION->nPts; i++)
+    for( i = 1; i <= GLOBAL_DATA_FOR_INTERPOLATION->nPts; i++)
     {
         if(GLOBAL_DATA_FOR_INTERPOLATION->requiredLatInds[firstInd] == GLOBAL_DATA_FOR_INTERPOLATION->requiredLatInds[i])
         {
@@ -543,9 +555,9 @@ void globalIndReduction(global_data_for_interpolation *GLOBAL_DATA_FOR_INTERPOLA
             else
             {
                 changePassFlag = 0;
-                for (int j = firstInd; j <= finalInd; j++)
+                for ( j = firstInd; j <= finalInd; j++)
                 {
-                    for (int k = firstInd; k < finalInd; k++)
+                    for ( k = firstInd; k < finalInd; k++)
                     {
                         if(GLOBAL_DATA_FOR_INTERPOLATION->requiredLonInds[k]>GLOBAL_DATA_FOR_INTERPOLATION->requiredLonInds[k+1])
                         {
@@ -563,7 +575,7 @@ void globalIndReduction(global_data_for_interpolation *GLOBAL_DATA_FOR_INTERPOLA
                     changePassFlag = 0;
                     
                 }
-                for (int j = firstInd; j <= finalInd; j++)
+                for ( j = firstInd; j <= finalInd; j++)
                 {
                     if((GLOBAL_DATA_FOR_INTERPOLATION->requiredLonInds[j] != GLOBAL_DATA_FOR_INTERPOLATION->requiredLonInds[j+1]) || j == finalInd)
                     {
@@ -596,7 +608,8 @@ int findGlobalMeshAdjacentPoints(global_mesh *GLOBAL_MESH, model_extent *MODEL_E
     }
     else
     {
-        for( int iy = 0; iy < GLOBAL_MESH->nY-1; iy ++)
+      int ix, iy;
+        for( iy = 0; iy < GLOBAL_MESH->nY-1; iy ++)
         {
             if ( GLOBAL_MESH->Y[iy] < *yp && GLOBAL_MESH->Y[iy+1] >= *yp)
             {
@@ -606,7 +619,7 @@ int findGlobalMeshAdjacentPoints(global_mesh *GLOBAL_MESH, model_extent *MODEL_E
                 break;
             }
         }
-        for( int ix = 0; ix < GLOBAL_MESH->nX-1; ix ++)
+        for( ix = 0; ix < GLOBAL_MESH->nX-1; ix ++)
         {
             if ( GLOBAL_MESH->X[ix] < *xp && GLOBAL_MESH->X[ix+1] >= *xp)
             {
@@ -636,7 +649,9 @@ void generateGlobalIndsForRead(global_mesh *GLOBAL_MESH, global_data_for_interpo
     double adjXInds[2], adjYInds[2];
     int pointsFound;
     double xPt, yPt;
-    for(int i = 0; i < GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->nPts; i++)
+    int i;
+
+    for( i = 0; i < GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->nPts; i++)
     {
         printf("Searching slice #%i, point #%i of %i.\r", sliceNum+1,i+1,GLOBAL_DATA_FOR_INTERPOLATION->INDIVIDUAL_SLICE_DATA[sliceNum]->nPts );
         fflush(stdout);
@@ -691,13 +706,14 @@ void generateSlicePoints(individual_slice_data *INDIVIDUAL_SLICE_DATA, individua
     double deltaLon;
     int nGrdPts;
     int count = 0;
-    
+    int j;
+
     nGrdPts = INDIVIDUAL_SLICE_PARAMETERS->resXY;
     
     deltaLat = (INDIVIDUAL_SLICE_PARAMETERS->latPtsSlice[0]-INDIVIDUAL_SLICE_PARAMETERS->latPtsSlice[1])/nGrdPts;
     deltaLon = (INDIVIDUAL_SLICE_PARAMETERS->lonPtsSlice[0]-INDIVIDUAL_SLICE_PARAMETERS->lonPtsSlice[1])/nGrdPts;
     
-    for(int j = 0; j < nGrdPts+1; j++)
+    for( j = 0; j < nGrdPts+1; j++)
     {
         INDIVIDUAL_SLICE_DATA->lonPts[count] = INDIVIDUAL_SLICE_PARAMETERS->lonPtsSlice[0]-j*deltaLon;
         INDIVIDUAL_SLICE_DATA->latPts[count] = INDIVIDUAL_SLICE_PARAMETERS->latPtsSlice[0]-j*deltaLat;
