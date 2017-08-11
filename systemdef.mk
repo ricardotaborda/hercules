@@ -24,7 +24,7 @@ ifeq ($(SYSTEM), XT5)
         CXX     = CC
         LD      = CC
         CFLAGS  += -DBIGBEN 
-        LDFLAGS += 
+        LDFLAGS += -Wl,-zmuldefs
         ifdef IOBUF_INC
             CPPFLAGS += -I${IOBUF_INC}
         endif        
