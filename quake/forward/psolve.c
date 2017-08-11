@@ -1491,7 +1491,7 @@ setrec( octant_t* leaf, double ticksize, void* data )
 			
 			z_m = ( leaf->lz * ticksize ) + halfedge;
 			
-			fprintf(stdout, " I am eliminating air elements for profile  \n");
+			/* fprintf(stdout, " I am eliminating air elements for profile  \n"); */
 			
 			/* Get the Vs at that location on the surface (z = 0) */			
 			res = profile_query(0, &g_props);
