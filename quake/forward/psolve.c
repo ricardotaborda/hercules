@@ -6301,7 +6301,8 @@ static void print_timing_stat()
     printf("\n");
 
 
-    printf("\n____________Breakdown____________\n");
+    printf("\n____________Breakdown____________\n\n");
+    printf("LOADING NZ MODEL                    : %.2f seconds\n\n", Timer_Value("NZ model data loading",0) );
     printf("TOTAL MESHING                       : %.2f seconds\n", TotalMeshingTime);
     printf("    Octor Newtree                   : %.2f seconds\n", Timer_Value("Octor Newtree",0) );
     printf("    Octor Refinetree                : %.2f seconds\n", Timer_Value("Octor Refinetree",0));
@@ -7756,7 +7757,7 @@ int main( int argc, char** argv )
     read_parameters(argc, argv);
 
     /* Create and open database */
-   // open_cvmdb();
+    // open_cvmdb();
 
     /* Initialize nonlinear parameters */
     if ( Param.includeNonlinearAnalysis == YES ) {
@@ -7783,8 +7784,10 @@ int main( int argc, char** argv )
     constract_Quality_Factor_Table();
 
 
-    // load NZ datasets
-      // read in velocity model data (surfaces, 1D models, tomography etc)
+    /* START: Loading NZ model data */
+
+    MPI_Barrier(comm_solver);
+    Timer_Start("NZ model data loading");
     
     VELO_MOD_1D_DATA = malloc(sizeof(velo_mod_1d_data));
     if (VELO_MOD_1D_DATA == NULL)
@@ -7816,16 +7819,25 @@ int main( int argc, char** argv )
 
     CALCULATION_LOG = malloc(sizeof(calculation_log));
 
-    
-
     MODEL_VERSION= "1.65";
     GLOBAL_MODEL_PARAMETERS = getGlobalModelParameters(MODEL_VERSION);
 
-
     loadAllGlobalData(GLOBAL_MODEL_PARAMETERS, CALCULATION_LOG, VELO_MOD_1D_DATA, NZ_TOMOGRAPHY_DATA, GLOBAL_SURFACES, BASIN_DATA);
 
-    //  This part is to give coordinates to the XYtoLL.c file
-    //*****************************************************************
+    Timer_Stop("NZ model data loading");
+    MPI_Barrier(comm_solver);
+
+    if ( Global.myID == 0 ) {
+        printf("\n\n\tCompleted loading NZ velocity model data!\n\n");
+        fflush( stdout );        
+    }
+
+    /* END: Loading NZ model data */
+
+
+    /* START: Stations coordinate conversion */
+    // This part is to give coordinates to the XYtoLL.c file
+
     static const char* fname = __FUNCTION_NAME;
 
     int    iCorner;
@@ -7834,25 +7846,27 @@ int main( int argc, char** argv )
 
     /* obtain the stations specifications */
     if ( (fp = fopen ( Param.parameters_input_file, "r")) == NULL ) {
-    solver_abort (fname, Param.parameters_input_file,
-              "Error opening parametersin configuration file");
+        solver_abort (fname, Param.parameters_input_file,
+            "Error opening parametersin configuration file");
     }
 
     auxiliar = (double *)malloc(sizeof(double)*8);
 
     if ( parsedarray( fp, "domain_surface_corners", 8, auxiliar ) != 0) {
-    solver_abort( fname, NULL,
-              "Error parsing domain_surface_corners field from %s\n",
-              Param.parameters_input_file);
+        solver_abort( fname, NULL,
+            "Error parsing domain_surface_corners field from %s\n",
+            Param.parameters_input_file);
     }
 
     for ( iCorner = 0; iCorner < 4; iCorner++){
-    Param.theSurfaceCornersLong[ iCorner ] = auxiliar [ iCorner * 2 ];
-    Param.theSurfaceCornersLat [ iCorner ] = auxiliar [ iCorner * 2 +1 ];
+        Param.theSurfaceCornersLong[ iCorner ] = auxiliar [ iCorner * 2 ];
+        Param.theSurfaceCornersLat [ iCorner ] = auxiliar [ iCorner * 2 +1 ];
     }
     free(auxiliar);
 
-    //*******************************************
+    /* END: Stations coordinate conversion */
+
+
     /* Generate, partition and output unstructured octree mesh */
     mesh_generate();
 
