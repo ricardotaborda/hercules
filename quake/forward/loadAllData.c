@@ -34,7 +34,7 @@ void loadAllGlobalData(global_model_parameters *GLOBAL_MODEL_PARAMETERS,calculat
  */
 {
     // read in sub velocity models
-    printf("Loading global velocity submodel data.\n");
+    // printf("Loading global velocity submodel data.\n");
 
     int i;
     for( i = 0; i < GLOBAL_MODEL_PARAMETERS->nVeloSubMod; i++)
@@ -42,29 +42,29 @@ void loadAllGlobalData(global_model_parameters *GLOBAL_MODEL_PARAMETERS,calculat
         if(strcmp(GLOBAL_MODEL_PARAMETERS->veloSubMod[i], "v1DsubMod") == 0)
         {
             load1dVeloSubModel(GLOBAL_MODEL_PARAMETERS->veloMod1dFileName[0], VELO_MOD_1D_DATA);
-            printf("Loaded 1D velocity model data.\n");
+            // printf("Loaded 1D velocity model data.\n");
         }
         else if(strcmp(GLOBAL_MODEL_PARAMETERS->veloSubMod[i], "EPtomo2010subMod") == 0)
         {
             loadEPtomoSurfaceData(GLOBAL_MODEL_PARAMETERS->tomographyName, NZ_TOMOGRAPHY_DATA );
-            printf("Loaded tomography data.\n");
+            // printf("Loaded tomography data.\n");
         }
         else if(strcmp(GLOBAL_MODEL_PARAMETERS->veloSubMod[i], "NaNsubMod") == 0)
         {
             // no data required for NaN velocity sub model, leave as placeholder
         }
     }
-    printf("Completed loading of global velocity submodel data.\n");
+    // printf("Completed loading of global velocity submodel data.\n");
 
     // read in global surfaces
     loadGlobalSurfaceData(GLOBAL_SURFACES, GLOBAL_MODEL_PARAMETERS);
-    printf("Completed loading of global surfaces.\n");
+    // printf("Completed loading of global surfaces.\n");
 
     // read in basin surfaces and boundaries
-    printf("Loading basin data.\n");
+    // printf("Loading basin data.\n");
     loadBasinData(BASIN_DATA, GLOBAL_MODEL_PARAMETERS);
-    printf("Completed loading basin data.\n");
-    printf("All global data loaded.\n");
+    // printf("Completed loading basin data.\n");
+    // printf("All global data loaded.\n");
     
 }
 

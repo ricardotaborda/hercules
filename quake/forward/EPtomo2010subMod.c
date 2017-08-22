@@ -206,7 +206,7 @@ void loadEPtomoSurfaceData(char *tomoType, nz_tomography_data *NZ_TOMOGRAPHY_DAT
         elev[17] = -370;
         elev[18] = -620;
         elev[19] = -750;
-        printf("Loading North Island Tomography.\n");
+        // printf("Loading North Island Tomography.\n");
 
         
     }
@@ -233,7 +233,7 @@ void loadEPtomoSurfaceData(char *tomoType, nz_tomography_data *NZ_TOMOGRAPHY_DAT
         elev[17] = -370;
         elev[18] = -620;
         elev[19] = -750;
-        printf("Loading NZ Tomography.\n");
+        // printf("Loading NZ Tomography.\n");
     }
     
     char baseFilename[MAX_FILENAME_STRING_LEN];

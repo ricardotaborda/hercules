@@ -36,9 +36,9 @@ void loadBasinData(basin_data *BASIN_DATA, global_model_parameters *GLOBAL_MODEL
         loadBasinSubModelData(i, BASIN_DATA, GLOBAL_MODEL_PARAMETERS);
 
     }
-    printf("All basin surfaces loaded.\n");
-    printf("All basin boundaries loaded.\n");
-    printf("All basin sub model data loaded.\n");
+    // printf("All basin surfaces loaded.\n");
+    // printf("All basin boundaries loaded.\n");
+    // printf("All basin sub model data loaded.\n");
 
 
 }
