@@ -241,7 +241,7 @@ extern void writeVsFile(char *OUTPUT_DIR, double Lat, double Lon, double VsTotal
 extern void writeZThresholdFile(char *OUTPUT_DIR, double Lat, double Lon, double Z_WRITE, double latInd, char *Z_THRESHOLD);
 void calcAndSaveZThreshold(char *OUTPUT_DIR, partial_global_mesh *PARTIAL_GLOBAL_MESH, partial_global_qualities *PARTIAL_GLOBAL_QUALITIES, calculation_log *CALCULATION_LOG, char *Z_THRESHOLD, int latInd);
 //extern void main_function(double x_lat,double y_long);
-extern void main_function(double x_lat,double y_long, double depth, calculation_log *CALCULATION_LOG, velo_mod_1d_data *VELO_MOD_1D_DATA, nz_tomography_data *NZ_TOMOGRAPHY_DATA, global_surfaces *GLOBAL_SURFACES, basin_data *BASIN_DATA, qualities_vector *QUALITIES_VECTOR);
+extern void main_function(double x_lat,double y_long, double depth, global_model_parameters *GLOBAL_MODEL_PARAMETERS, calculation_log *CALCULATION_LOG, velo_mod_1d_data *VELO_MOD_1D_DATA, nz_tomography_data *NZ_TOMOGRAPHY_DATA, global_surfaces *GLOBAL_SURFACES, basin_data *BASIN_DATA, qualities_vector *QUALITIES_VECTOR);
 
 
 
