@@ -7828,7 +7828,7 @@ int main( int argc, char** argv )
     MPI_Barrier(comm_solver);
 
     if ( Global.myID == 0 ) {
-        printf("\n\n\tCompleted loading NZ velocity model data!\n\n");
+        printf("\n\nCompleted loading NZ velocity model data!\n\n");
         fflush( stdout );        
     }
 
@@ -7869,6 +7869,15 @@ int main( int argc, char** argv )
 
     /* Generate, partition and output unstructured octree mesh */
     mesh_generate();
+
+
+
+    if ( Global.myID == 0 ) {
+        printf("\n\nCompleted traditional meshing steps!\n\n");
+        fflush( stdout );        
+    }
+
+
 
     if ( Param.includeBuildings == YES ){
         if ( get_fixedbase_flag() == YES ) {
@@ -7917,6 +7926,11 @@ int main( int argc, char** argv )
     Timer_Reduce("Mesh Stats Print", MAX | MIN, comm_solver);
 
 
+    if ( Global.myID == 0 ) {
+        printf("\n\nCompleted additional meshing steps!\n\n");
+        fflush( stdout );        
+    }
+
 
 
     free(VELO_MOD_1D_DATA);
@@ -7929,6 +7943,11 @@ int main( int argc, char** argv )
     free(GLOBAL_MODEL_PARAMETERS);
 
 
+    if ( Global.myID == 0 ) {
+        printf("\n\nCompleted freeing mempry variables from NZ model!\n\n");
+        fflush( stdout );        
+    }
+
 
 
     if ( Param.theNumberOfStations !=0 ){
@@ -7940,6 +7959,15 @@ int main( int argc, char** argv )
             topography_stations_init(Global.myMesh, Param.myStations, Param.myNumberOfStations);
         }
 
+
+
+    if ( Global.myID == 0 ) {
+        printf("\n\nCompleted stations setup!\n\n");
+        fflush( stdout );        
+    }
+
+
+
     /* Initialize the output planes */
     if ( Param.theNumberOfPlanes != 0 ) {
         planes_setup(Global.myID, &Param.thePlanePrintRate, Param.IO_pool_pe_count,
@@ -7949,6 +7977,15 @@ int main( int argc, char** argv )
 		     Param.planes_input_file);
     }
 
+
+
+    if ( Global.myID == 0 ) {
+        printf("\n\nCompleted planes stup!\n\n");
+        fflush( stdout );        
+    }
+
+
+
     /* Initialize the solver, source and output structures */
     solver_init();
     Timer_Start("Solver Stats Print");
@@ -7957,6 +7994,11 @@ int main( int argc, char** argv )
     Timer_Reduce("Solver Stats Print", MAX | MIN, comm_solver);
 
 
+
+    if ( Global.myID == 0 ) {
+        printf("\n\nCompleted solver init!\n\n");
+        fflush( stdout );        
+    }
 
 
 
